@@ -23,9 +23,9 @@ export default function AddTask({ section, onAdded }) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    supabase.from('profiles').select('id, full_name').then(({ data }) => {
-      if (data) setMembers(data)
-    })
+ supabase.from('profiles').select('id, full_name').then(({ data }) => {
+  if (data) setMembers(data.filter(m => m.full_name))
+})
   }, [])
 
   async function submit(e) {
