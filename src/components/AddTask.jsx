@@ -21,11 +21,18 @@ export default function AddTask({ section, onAdded }) {
   const [priority, setPriority] = useState('media')
   const [assignedTo, setAssignedTo] = useState('')
   const [loading, setLoading] = useState(false)
+  const [membersError, setMembersError] = useState('')
 
   useEffect(() => {
- supabase.from('profiles').select('id, full_name').then(({ data }) => {
-  if (data) setMembers(data.filter(m => m.full_name))
-})
+    async function loadMembers() {
+      const { data, error } = await supabase.from('profiles').select('id, full_name')
+      if (error) {
+        setMembersError('Errore caricamento membri: ' + error.message)
+      } else {
+        setMembers(data || [])
+      }
+    }
+    loadMembers()
   }, [])
 
   async function submit(e) {
@@ -81,9 +88,12 @@ export default function AddTask({ section, onAdded }) {
         <input style={fieldStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
         <select style={fieldStyle} value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
           <option value="">Assegna a...</option>
-          {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+          {members.map(m => (
+            <option key={m.id} value={m.id}>{m.full_name || m.id}</option>
+          ))}
         </select>
       </div>
+      {membersError && <div style={{ fontSize:11, color:'var(--red)', fontFamily:'var(--mono)' }}>{membersError}</div>}
       <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:52, lineHeight:1.5 }}
         value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrizione — brief, istruzioni, note..." />
       <div>
