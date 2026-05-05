@@ -7,11 +7,11 @@ import EditorialPlan from '../components/EditorialPlan'
 const todayStr = new Date().toISOString().slice(0,10)
 
 const SECTIONS = [
-  { id:'overview',    label:'Overview',    icon:'◎' },
-  { id:'videomaker',  label:'Video Maker', icon:'🎬' },
-  { id:'copywriter',  label:'Copywriter',  icon:'✍️' },
-  { id:'tecnico',     label:'Tecnico',     icon:'⚙️' },
-  { id:'social',      label:'Social',      icon:'📱' },
+  { id:'overview',   label:'Overview',    icon:'◎' },
+  { id:'videomaker', label:'Video Maker', icon:'🎬' },
+  { id:'copywriter', label:'Copywriter',  icon:'✍️' },
+  { id:'tecnico',    label:'Tecnico',     icon:'⚙️' },
+  { id:'social',     label:'Social',      icon:'📱' },
 ]
 
 function Overview() {
@@ -22,7 +22,6 @@ function Overview() {
       const { data: tasks } = await supabase.from('tasks').select('section, done, due_date')
       const { data: editorial } = await supabase.from('editorial_plan').select('stato, publish_date')
       if (!tasks) return
-
       const sections = ['videomaker','copywriter','tecnico','social']
       const sectionStats = sections.map(s => {
         const t = tasks.filter(x => x.section === s)
@@ -30,11 +29,9 @@ function Overview() {
         const done = t.filter(x => x.done).length
         return { section: s, total: t.length, done, late }
       })
-
       const editorialReady = (editorial || []).filter(e => e.stato === 'pronto').length
       const editorialPublished = (editorial || []).filter(e => e.stato === 'pubblicato').length
       const editorialTotal = (editorial || []).length
-
       setStats({ sectionStats, editorialReady, editorialPublished, editorialTotal })
     }
     load()
@@ -47,8 +44,6 @@ function Overview() {
   return (
     <div>
       <div style={{ fontSize:12, color:'var(--text3)', fontFamily:'var(--mono)', marginBottom:'1.5rem' }}>Panoramica attività — aggiornata ora</div>
-
-      {/* Section stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:'1.5rem' }}>
         {stats.sectionStats.map(s => (
           <div key={s.section} style={{ background:'var(--bg2)', borderRadius:'var(--radius-lg)', border:`0.5px solid ${s.late>0?'rgba(244,91,91,0.3)':'var(--border)'}`, padding:'16px' }}>
@@ -66,9 +61,7 @@ function Overview() {
           </div>
         ))}
       </div>
-
-      {/* Editorial stats */}
-      <div style={{ background:'var(--bg2)', borderRadius:'var(--radius-lg)', border:'0.5px solid var(--border)', padding:'16px', marginBottom:'1.5rem' }}>
+      <div style={{ background:'var(--bg2)', borderRadius:'var(--radius-lg)', border:'0.5px solid var(--border)', padding:'16px' }}>
         <div style={{ fontSize:12, fontWeight:500, color:'var(--text)', marginBottom:10 }}>Piano Editoriale</div>
         <div style={{ display:'flex', gap:20 }}>
           <div><div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', marginBottom:2 }}>Totale</div><div style={{ fontSize:20, fontWeight:600 }}>{stats.editorialTotal}</div></div>
@@ -86,12 +79,15 @@ function ProfileSettings({ onClose }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
- async function saveName() {
+  async function saveName() {
+    if (!fullName.trim()) return
     setSaving(true)
-    await supabase.from('profiles').update({ full_name: fullName }).eq('id', profile.id)
+    const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() }).eq('id', profile.id)
     setSaving(false)
-    setSaved(true)
-    setTimeout(() => { setSaved(false); window.location.reload() }, 1500)
+    if (!error) {
+      setSaved(true)
+      setTimeout(() => { setSaved(false); window.location.reload() }, 1200)
+    }
   }
 
   return (
@@ -101,18 +97,16 @@ function ProfileSettings({ onClose }) {
           <span style={{ fontSize:15, fontWeight:600 }}>Impostazioni profilo</span>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:18 }}>×</button>
         </div>
-
         <div style={{ marginBottom:'1.2rem' }}>
           <label style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6, display:'block' }}>Nome</label>
           <input value={fullName} onChange={e => setFullName(e.target.value)}
             style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg3)', color:'var(--text)', fontSize:13 }} />
         </div>
-
         <div style={{ marginBottom:'1.5rem' }}>
           <label style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10, display:'block' }}>Tema</label>
           <div style={{ display:'flex', gap:8 }}>
             {['dark','light'].map(t => (
-              <button key={t} onClick={toggleTheme} style={{
+              <button key={t} onClick={() => { if (theme !== t) toggleTheme() }} style={{
                 flex:1, padding:'10px', borderRadius:8,
                 border: `0.5px solid ${theme===t?'var(--accent)':'var(--border2)'}`,
                 background: theme===t?'var(--accent)':'var(--bg3)',
@@ -124,9 +118,8 @@ function ProfileSettings({ onClose }) {
             ))}
           </div>
         </div>
-
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={saveName} disabled={saving} style={{ flex:1, padding:'9px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer' }}>
+          <button onClick={saveName} disabled={saving} style={{ flex:1, padding:'9px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor: saving?'not-allowed':'pointer', opacity: saving?0.7:1 }}>
             {saved ? '✓ Salvato' : saving ? 'Salvataggio...' : 'Salva'}
           </button>
           <button onClick={onClose} style={{ padding:'9px 16px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>
@@ -163,7 +156,6 @@ export default function Dashboard() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
 
-      {/* Top bar */}
       <div style={{ background:'var(--bg2)', borderBottom:'0.5px solid var(--border)', padding:'0 1.5rem', display:'flex', alignItems:'center', height:52, gap:12, position:'sticky', top:0, zIndex:10 }}>
         <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--accent)', boxShadow:'0 0 10px var(--accent)', flexShrink:0 }} />
         <span style={{ fontSize:14, fontWeight:600 }}>Team Manager</span>
@@ -177,8 +169,6 @@ export default function Dashboard() {
       </div>
 
       <div style={{ maxWidth:860, margin:'0 auto', padding:'2rem 1rem' }}>
-
-        {/* Tabs */}
         <div style={{ display:'flex', gap:2, marginBottom:'1.5rem', background:'var(--bg2)', borderRadius:'var(--radius)', padding:4, border:'0.5px solid var(--border)', overflowX:'auto' }}>
           {SECTIONS.map(sec => (
             <button key={sec.id} onClick={() => { setActiveTab(sec.id); setSocialSubView('tasks'); setChannelFilter('all') }} style={{
@@ -190,17 +180,13 @@ export default function Dashboard() {
               transition:'all 0.15s', position:'relative'
             }}>
               <span style={{ marginRight:5, fontSize:12 }}>{sec.icon}</span>{sec.label}
-              {sec.id !== 'overview' && sec.id !== 'social' && lateCounts[sec.id] > 0 && (
+              {['videomaker','copywriter','tecnico','social'].includes(sec.id) && lateCounts[sec.id] > 0 && (
                 <span style={{ marginLeft:5, fontSize:10, background:'var(--red)', color:'white', borderRadius:10, padding:'1px 5px', fontFamily:'var(--mono)' }}>{lateCounts[sec.id]}</span>
-              )}
-              {sec.id === 'social' && (lateCounts['social']||0) > 0 && (
-                <span style={{ marginLeft:5, fontSize:10, background:'var(--red)', color:'white', borderRadius:10, padding:'1px 5px', fontFamily:'var(--mono)' }}>{lateCounts['social']}</span>
               )}
             </button>
           ))}
         </div>
 
-        {/* Social sub-tabs */}
         {activeTab === 'social' && (
           <>
             <div style={{ display:'flex', gap:6, marginBottom:'1rem' }}>
@@ -218,7 +204,6 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Content */}
         {activeTab === 'overview' && <Overview />}
         {activeTab === 'social' && socialSubView === 'tasks' && <TaskSection section="social" />}
         {activeTab === 'social' && socialSubView === 'editorial' && <EditorialPlan channelFilter={channelFilter} />}
