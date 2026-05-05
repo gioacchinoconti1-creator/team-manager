@@ -1,0 +1,97 @@
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { Badge, ChBadge, PrioBadge } from './UI'
+
+const todayStr = new Date().toISOString().slice(0,10)
+
+export default function TaskCard({ task, onUpdate, lateBadge }) {
+  const [expanded, setExpanded] = useState(false)
+  const [driveVal, setDriveVal] = useState(task.drive_link || '')
+  const late = !task.done && task.due_date && task.due_date < todayStr
+  const dateLabel = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : null
+
+  function openCalendar() {
+    if (!task.due_date) return
+    const date = task.due_date.replace(/-/g, '')
+    const title = encodeURIComponent(task.title)
+    const details = encodeURIComponent(task.description || '')
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${date}/${date}&details=${details}&reminders=POPUP,0,POPUP,1440,POPUP,4320`
+    window.open(url, '_blank')
+  }
+
+  async function toggleDone() {
+    const { data } = await supabase.from('tasks').update({ done: !task.done }).eq('id', task.id).select().single()
+    if (data) onUpdate(data)
+  }
+
+  async function saveDrive() {
+    const { data } = await supabase.from('tasks').update({ drive_link: driveVal }).eq('id', task.id).select().single()
+    if (data) onUpdate(data)
+  }
+
+  return (
+    <div style={{
+      background:'var(--bg2)',
+      border:`0.5px solid ${late ? 'rgba(244,91,91,0.35)' : 'var(--border)'}`,
+      borderRadius:'var(--radius-lg)', padding:'14px 16px',
+      opacity: task.done ? 0.45 : 1, transition:'all 0.15s'
+    }}>
+      <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+        <div onClick={toggleDone} style={{
+          width:18, height:18, borderRadius:5, flexShrink:0, marginTop:2,
+          border: task.done ? 'none' : '1.5px solid var(--border2)',
+          background: task.done ? 'var(--green)' : 'transparent',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:10, color:'white', cursor:'pointer'
+        }}>{task.done && '✓'}</div>
+
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:6 }}>
+            <div style={{ fontSize:14, fontWeight:500, flex:1, lineHeight:1.4, textDecoration: task.done?'line-through':'none', color: task.done?'var(--text3)':'var(--text)' }}>
+              {task.title}
+            </div>
+            {task.description && (
+              <button onClick={() => setExpanded(e => !e)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)', flexShrink:0 }}>
+                {expanded ? '▲ chiudi' : '▼ dettagli'}
+              </button>
+            )}
+          </div>
+
+          {expanded && task.description && (
+            <div style={{ fontSize:12, color:'var(--text2)', lineHeight:1.6, marginBottom:8, padding:'10px 12px', borderRadius:8, background:'var(--bg3)', border:'0.5px solid var(--border)', whiteSpace:'pre-wrap' }}>
+              {task.description}
+            </div>
+          )}
+
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+            <Badge type={task.type} />
+            {task.channel && <ChBadge channel={task.channel} />}
+            {task.priority && <PrioBadge priority={task.priority} />}
+            {dateLabel && (
+              <span style={{ fontSize:11, fontFamily:'var(--mono)', color: late?'var(--red)':'var(--text2)' }}>
+                {late ? '⚠ ' : ''}{dateLabel}
+              </span>
+            )}
+            {task.assignee_name && (
+              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>@{task.assignee_name}</span>
+            )}
+            {task.due_date && (
+              <button onClick={openCalendar} title="Aggiungi a Google Calendar" style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
+                📅 Reminder
+              </button>
+            )}
+            {task.done && (
+              task.drive_link
+                ? <a href={task.drive_link} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'var(--accent2)', fontFamily:'var(--mono)' }}>↗ Drive</a>
+                : <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                    <input value={driveVal} onChange={e => setDriveVal(e.target.value)} placeholder="Incolla link Drive..."
+                      style={{ fontSize:12, padding:'3px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'var(--bg3)', color:'var(--text)', fontFamily:'var(--mono)', width:180 }} />
+                    <button onClick={saveDrive} style={{ fontSize:11, padding:'3px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--accent2)', cursor:'pointer' }}>Salva</button>
+                  </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
