@@ -86,12 +86,12 @@ function ProfileSettings({ onClose }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  async function saveName() {
+ async function saveName() {
     setSaving(true)
     await supabase.from('profiles').update({ full_name: fullName }).eq('id', profile.id)
     setSaving(false)
     setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setTimeout(() => { setSaved(false); window.location.reload() }, 1500)
   }
 
   return (
