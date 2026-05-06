@@ -35,7 +35,7 @@ export default function TaskSection({ section }) {
     setLoading(true)
     const { data } = await supabase
       .from('tasks')
-      .select('*, assignee:profiles!tasks_assigned_to_fkey(full_name)')
+      .select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), creator:profiles!tasks_created_by_fkey(full_name)')
       .eq('section', section)
       .order('due_date', { ascending: true })
     setTasks((data || []).map(t => ({ ...t, assignee_name: t.assignee?.full_name })))
