@@ -33,6 +33,7 @@ function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate()+n); 
 function toDateStr(date) { return date.toISOString().slice(0,10) }
 function formatDate(ds) { const d = new Date(ds+'T00:00:00'); return d.toLocaleDateString('it-IT',{day:'numeric',month:'short'}) }
 
+// ── Add Form ──────────────────────────────────────────────────────────────────
 function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
   const { profile } = useAuth()
   const [form, setForm] = useState({ title:'', channel: prefillChannel||'ig', format:'reel', publish_date: prefillDate||'', stato:'pianificazione', brief:'', caption:'', hashtags:'', cta:'', notes:'', drive_link:'', published_link:'' })
@@ -59,10 +60,8 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
           <input style={{ ...fieldStyle, gridColumn:'1/-1' }} value={form.title} onChange={e => set('title',e.target.value)} placeholder="Titolo contenuto..." required />
           <select style={fieldStyle} value={form.channel} onChange={e => set('channel',e.target.value)}>
-            <option value="ig">IG / FB</option>
-            <option value="youtube">YouTube</option>
-            <option value="tiktok">TikTok</option>
-            <option value="mail">Mail</option>
+            <option value="ig">IG / FB</option><option value="youtube">YouTube</option>
+            <option value="tiktok">TikTok</option><option value="mail">Mail</option>
           </select>
           <select style={fieldStyle} value={form.format} onChange={e => set('format',e.target.value)}>
             {Object.entries(FORMAT_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
@@ -90,14 +89,85 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
   )
 }
 
-function DetailModal({ item, onClose, onUpdate, onDelete }) {
+// ── Edit/Duplicate Form (shared) ───────────────────────────────────────────────
+function EditForm({ initialData, mode, onSave, onCancel, saving }) {
+  const [form, setForm] = useState({ ...initialData, title: mode === 'duplicate' ? initialData.title + ' (copia)' : initialData.title })
+  function set(k,v) { setForm(f => ({...f,[k]:v})) }
+  const captionLabel = form.channel === 'mail' ? 'Corpo mail' : 'Caption'
+  const hashLabel = form.channel === 'mail' ? 'Oggetto mail' : 'Hashtag'
+
+  return (
+    <div style={{ marginTop:12 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+        <input style={{ ...fieldStyle, gridColumn:'1/-1' }} value={form.title} onChange={e => set('title',e.target.value)} placeholder="Titolo contenuto..." />
+        <select style={fieldStyle} value={form.channel} onChange={e => set('channel',e.target.value)}>
+          <option value="ig">IG / FB</option><option value="youtube">YouTube</option>
+          <option value="tiktok">TikTok</option><option value="mail">Mail</option>
+        </select>
+        <select style={fieldStyle} value={form.format} onChange={e => set('format',e.target.value)}>
+          {Object.entries(FORMAT_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <input style={fieldStyle} type="date" value={form.publish_date||''} onChange={e => set('publish_date',e.target.value)} />
+        <select style={fieldStyle} value={form.stato} onChange={e => set('stato',e.target.value)}>
+          {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
+        </select>
+      </div>
+      <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:56, marginBottom:8, lineHeight:1.5 }} value={form.brief||''} onChange={e => set('brief',e.target.value)} placeholder="Brief / descrizione del contenuto..." />
+      <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:56, marginBottom:8, lineHeight:1.5 }} value={form.caption||''} onChange={e => set('caption',e.target.value)} placeholder={captionLabel + '...'} />
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+        <input style={fieldStyle} value={form.hashtags||''} onChange={e => set('hashtags',e.target.value)} placeholder={hashLabel} />
+        <input style={fieldStyle} value={form.cta||''} onChange={e => set('cta',e.target.value)} placeholder="CTA" />
+        <input style={fieldStyle} value={form.drive_link||''} onChange={e => set('drive_link',e.target.value)} placeholder="Link Drive" />
+        <input style={fieldStyle} value={form.published_link||''} onChange={e => set('published_link',e.target.value)} placeholder="Link pubblicato / inviato" />
+      </div>
+      <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:40, marginBottom:12, lineHeight:1.5 }} value={form.notes||''} onChange={e => set('notes',e.target.value)} placeholder="Note interne..." />
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={() => onSave(form)} disabled={saving} style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer', opacity: saving?0.6:1 }}>
+          {saving ? 'Salvataggio...' : mode === 'duplicate' ? '📋 Salva copia' : '💾 Salva modifiche'}
+        </button>
+        <button onClick={onCancel} style={{ padding:'8px 14px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>Annulla</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Detail Modal ───────────────────────────────────────────────────────────────
+function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
   if (!item) return null
+  const [mode, setMode] = useState('view') // 'view' | 'edit' | 'duplicate'
+  const [saving, setSaving] = useState(false)
   const c = CH_COLOR[item.channel] || { light:'var(--bg3)', text:'var(--text2)', border:'var(--border2)' }
 
-  async function cycleStato() {
-    const idx = STATI.indexOf(item.stato)
-    const next = STATI[(idx+1) % STATI.length]
-    const { data } = await supabase.from('editorial_plan').update({ stato: next }).eq('id', item.id).select().single()
+  async function handleSaveEdit(form) {
+    setSaving(true)
+    const { data } = await supabase.from('editorial_plan').update({
+      title: form.title, channel: form.channel, format: form.format,
+      publish_date: form.publish_date||null, stato: form.stato,
+      brief: form.brief||null, caption: form.caption||null,
+      hashtags: form.hashtags||null, cta: form.cta||null,
+      notes: form.notes||null, drive_link: form.drive_link||null,
+      published_link: form.published_link||null,
+    }).eq('id', item.id).select().single()
+    if (data) { onUpdate(data); setMode('view') }
+    setSaving(false)
+  }
+
+  async function handleSaveDuplicate(form) {
+    setSaving(true)
+    const { data } = await supabase.from('editorial_plan').insert({
+      title: form.title, channel: form.channel, format: form.format,
+      publish_date: form.publish_date||null, stato: form.stato,
+      brief: form.brief||null, caption: form.caption||null,
+      hashtags: form.hashtags||null, cta: form.cta||null,
+      notes: form.notes||null, drive_link: form.drive_link||null,
+      published_link: form.published_link||null,
+    }).select().single()
+    if (data) { onDuplicate(data); onClose() }
+    setSaving(false)
+  }
+
+  async function updateStato(stato) {
+    const { data } = await supabase.from('editorial_plan').update({ stato }).eq('id', item.id).select().single()
     if (data) onUpdate(data)
   }
 
@@ -112,37 +182,84 @@ function DetailModal({ item, onClose, onUpdate, onDelete }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div style={{ background:'var(--bg2)', border:`1px solid ${c.border}`, borderRadius:'var(--radius-lg)', padding:'1.5rem', width:'100%', maxWidth:520, maxHeight:'85vh', overflowY:'auto', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background:'var(--bg2)', border:`1px solid ${c.border}`, borderRadius:'var(--radius-lg)', padding:'1.5rem', width:'100%', maxWidth:540, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:'1rem' }}>
           <div style={{ flex:1 }}>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
               <span style={chPill(item.channel)}>{c.label}</span>
               <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{FORMAT_LABELS[item.format]||item.format}</span>
-              <StatoBadge stato={item.stato} />
             </div>
             <div style={{ fontSize:16, fontWeight:600, color:'var(--text)', lineHeight:1.4 }}>{item.title}</div>
             {item.publish_date && <div style={{ fontSize:12, color:'var(--text3)', fontFamily:'var(--mono)', marginTop:4 }}>📅 {formatDate(item.publish_date)}</div>}
           </div>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:20, flexShrink:0 }}>×</button>
         </div>
-        {[['Brief', item.brief],[captionLabel, item.caption],[hashLabel, item.hashtags],['CTA', item.cta],['Note', item.notes]].filter(([,v])=>v).map(([label,value]) => (
-          <div key={label} style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
-            <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.6, padding:'8px 10px', borderRadius:7, background:'var(--bg3)', whiteSpace:'pre-wrap' }}>{value}</div>
-          </div>
-        ))}
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:'1rem', paddingTop:'1rem', borderTop:'0.5px solid var(--border)' }}>
-          {item.drive_link && <a href={item.drive_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--accent2)', fontFamily:'var(--mono)' }}>↗ Drive</a>}
-          {item.published_link && <a href={item.published_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--green)', fontFamily:'var(--mono)' }}>↗ Pubblicato</a>}
-          {item.publish_date && <button onClick={() => { const d=item.publish_date.replace(/-/g,''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(item.title)}&dates=${d}/${d}&reminders=POPUP,0,POPUP,1440,POPUP,4320`,'_blank') }} style={{ fontSize:12, padding:'3px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer' }}>📅 Reminder</button>}
-          <button onClick={cycleStato} style={{ fontSize:12, padding:'3px 10px', borderRadius:6, border:`0.5px solid ${c.border}`, background:'transparent', color: c.text, cursor:'pointer' }}>Avanza stato →</button>
-          <button onClick={deleteItem} style={{ fontSize:12, padding:'3px 10px', borderRadius:6, border:'0.5px solid rgba(244,91,91,0.3)', background:'transparent', color:'#f87171', cursor:'pointer', marginLeft:'auto' }}>Elimina</button>
-        </div>
+
+        {/* Mode: view */}
+        {mode === 'view' && (
+          <>
+            {/* Stato dropdown */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Stato</div>
+              <select
+                value={item.stato}
+                onChange={e => updateStato(e.target.value)}
+                style={{ ...fieldStyle, width:'100%' }}
+              >
+                {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
+              </select>
+            </div>
+
+            {/* Fields */}
+            {[['Brief', item.brief],[captionLabel, item.caption],[hashLabel, item.hashtags],['CTA', item.cta],['Note', item.notes]].filter(([,v])=>v).map(([label,value]) => (
+              <div key={label} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
+                <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.6, padding:'8px 10px', borderRadius:7, background:'var(--bg3)', whiteSpace:'pre-wrap' }}>{value}</div>
+              </div>
+            ))}
+
+            {/* Actions */}
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:'1rem', paddingTop:'1rem', borderTop:'0.5px solid var(--border)' }}>
+              {item.drive_link && <a href={item.drive_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--accent2)', fontFamily:'var(--mono)' }}>↗ Drive</a>}
+              {item.published_link && <a href={item.published_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--green)', fontFamily:'var(--mono)' }}>↗ Pubblicato</a>}
+              {item.publish_date && (
+                <button onClick={() => { const d=item.publish_date.replace(/-/g,''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(item.title)}&dates=${d}/${d}&reminders=POPUP,0,POPUP,1440,POPUP,4320`,'_blank') }}
+                  style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer' }}>📅 Reminder</button>
+              )}
+              <button onClick={() => setMode('edit')}
+                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:`0.5px solid ${c.border}`, background:'transparent', color: c.text, cursor:'pointer' }}>✏️ Modifica</button>
+              <button onClick={() => setMode('duplicate')}
+                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer' }}>📋 Duplica</button>
+              <button onClick={deleteItem}
+                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid rgba(244,91,91,0.3)', background:'transparent', color:'#f87171', cursor:'pointer', marginLeft:'auto' }}>Elimina</button>
+            </div>
+          </>
+        )}
+
+        {/* Mode: edit */}
+        {mode === 'edit' && (
+          <>
+            <div style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:4 }}>Modifica contenuto</div>
+            <EditForm initialData={item} mode="edit" onSave={handleSaveEdit} onCancel={() => setMode('view')} saving={saving} />
+          </>
+        )}
+
+        {/* Mode: duplicate */}
+        {mode === 'duplicate' && (
+          <>
+            <div style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:4 }}>Duplica contenuto</div>
+            <div style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', marginBottom:8 }}>Modifica i campi prima di salvare la copia</div>
+            <EditForm initialData={item} mode="duplicate" onSave={handleSaveDuplicate} onCancel={() => setMode('view')} saving={saving} />
+          </>
+        )}
       </div>
     </div>
   )
 }
 
+// ── Day View ───────────────────────────────────────────────────────────────────
 function DayView({ items, date, onSelect, onAdd }) {
   const ds = toDateStr(date)
   const dayItems = items.filter(i => i.publish_date === ds)
@@ -165,6 +282,7 @@ function DayView({ items, date, onSelect, onAdd }) {
   )
 }
 
+// ── Week View ──────────────────────────────────────────────────────────────────
 function WeekView({ items, weekStart, onSelect, onAdd }) {
   const days = Array.from({ length:7 }, (_,i) => addDays(weekStart, i))
   return (
@@ -203,6 +321,7 @@ function WeekView({ items, weekStart, onSelect, onAdd }) {
   )
 }
 
+// ── Month View ─────────────────────────────────────────────────────────────────
 function MonthView({ items, month, onSelect, onAdd }) {
   const y = month.getFullYear(); const m = month.getMonth()
   const firstDay = new Date(y, m, 1)
@@ -246,6 +365,7 @@ function MonthView({ items, month, onSelect, onAdd }) {
   )
 }
 
+// ── Timeline View ──────────────────────────────────────────────────────────────
 function TimelineView({ items, weekStart, onSelect, onAdd }) {
   const days = Array.from({ length:7 }, (_,i) => addDays(weekStart, i))
   const channels = ['youtube','ig','tiktok','mail']
@@ -302,6 +422,7 @@ function TimelineView({ items, weekStart, onSelect, onAdd }) {
   )
 }
 
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function EditorialPlan({ channelFilter }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -326,6 +447,7 @@ export default function EditorialPlan({ channelFilter }) {
   function onAdded(item) { setItems(prev => [...prev, item]); setShowAdd(false) }
   function onUpdate(updated) { setItems(prev => prev.map(i => i.id===updated.id ? updated : i)); setSelectedItem(null) }
   function onDelete(id) { setItems(prev => prev.filter(i => i.id !== id)) }
+  function onDuplicate(item) { setItems(prev => [...prev, item]) }
 
   function handleAdd(date, ch) { setAddPrefillDate(date); setAddPrefillChannel(ch||''); setShowAdd(true) }
 
@@ -360,7 +482,7 @@ export default function EditorialPlan({ channelFilter }) {
 
   return (
     <div>
-      {selectedItem && <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} onUpdate={onUpdate} onDelete={onDelete} />}
+      {selectedItem && <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} onUpdate={onUpdate} onDelete={onDelete} onDuplicate={onDuplicate} />}
 
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'1.2rem', flexWrap:'wrap' }}>
         <div style={{ display:'flex', gap:2, background:'var(--bg2)', borderRadius:'var(--radius)', padding:3, border:'0.5px solid var(--border)' }}>
@@ -382,7 +504,6 @@ export default function EditorialPlan({ channelFilter }) {
         </button>
       </div>
 
-      {/* Channel legend */}
       <div style={{ display:'flex', gap:12, marginBottom:'1rem', flexWrap:'wrap', alignItems:'center' }}>
         {Object.entries(CH_COLOR).map(([ch, c]) => (
           <div key={ch} style={{ display:'flex', alignItems:'center', gap:5 }}>
