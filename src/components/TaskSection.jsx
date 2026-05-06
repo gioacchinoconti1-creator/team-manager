@@ -7,9 +7,9 @@ import { SectionLabel, Empty, Spinner, Select } from './UI'
 const todayStr = new Date().toISOString().slice(0,10)
 
 function buildMonthOptions() {
-  const opts = []
+  const opts = [{ val:'', label:'Tutti i mesi' }]
   const now = new Date()
-  for (let i = -2; i <= 4; i++) {
+  for (let i = -2; i <= 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
     const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
     const label = d.toLocaleDateString('it-IT', { month:'long', year:'numeric' })
@@ -26,7 +26,7 @@ const thisMonth = (() => {
 export default function TaskSection({ section }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [month, setMonth] = useState(thisMonth)
+  const [month, setMonth] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [prioFilter, setPrioFilter] = useState('')
   const monthOptions = buildMonthOptions()
@@ -48,7 +48,9 @@ export default function TaskSection({ section }) {
   function onUpdate(updated) { setTasks(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t)) }
   function onDelete(id) { setTasks(prev => prev.filter(t => t.id !== id)) }
 
-  const monthTasks = tasks.filter(t => t.due_date?.startsWith(month))
+  const monthTasks = month
+    ? tasks.filter(t => t.due_date?.startsWith(month))
+    : tasks
   const doneCount = monthTasks.filter(t => t.done).length
   const total = monthTasks.length
   const lateCount = tasks.filter(t => !t.done && t.due_date && t.due_date < todayStr).length
