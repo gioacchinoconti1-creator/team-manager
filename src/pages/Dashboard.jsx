@@ -195,7 +195,7 @@ export default function Dashboard() {
               ))}
             </div>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'1rem' }}>
-              {[['all','Tutti'],['youtube','YouTube'],['ig','IG / FB'],['tiktok','TikTok']].map(([ch,label]) => {
+              {[['all','Tutti'],['youtube','YouTube'],['ig','IG / FB'],['tiktok','TikTok'],['mail','Mail']].map(([ch,label]) => {
                 const styles = { all:{ background:'var(--bg3)', color:'var(--text)' }, youtube:{ background:'rgba(244,91,91,0.15)', color:'#f87171', borderColor:'rgba(244,91,91,0.3)' }, ig:{ background:'rgba(124,108,250,0.15)', color:'var(--accent2)', borderColor:'rgba(124,108,250,0.35)' }, tiktok:{ background:'rgba(62,207,142,0.12)', color:'var(--green)', borderColor:'rgba(62,207,142,0.3)' } }
                 const isActive = channelFilter === ch
                 return <button key={ch} onClick={() => setChannelFilter(ch)} style={{ fontSize:12, padding:'5px 14px', borderRadius:20, border:'0.5px solid var(--border2)', cursor:'pointer', fontFamily:'var(--font)', background:'transparent', color:'var(--text2)', fontWeight: isActive?500:400, ...(isActive?styles[ch]:{}) }}>{label}</button>
