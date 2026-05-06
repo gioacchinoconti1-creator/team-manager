@@ -64,9 +64,9 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
       assigned_to: form.assigned_to || null,
       channel: task.section === 'social' ? form.channel : task.channel,
       priority: task.section === 'tecnico' ? form.priority : task.priority,
-    }).eq('id', task.id).select('*, assignee:profiles!tasks_assigned_to_fkey(full_name)').single()
+    }).eq('id', task.id).select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), creator:profiles!tasks_created_by_fkey(full_name)').single()
     if (data) {
-      onUpdate({ ...data, assignee_name: data.assignee?.full_name })
+     onUpdate({ ...data, assignee_name: data.assignee?.full_name, creator_name: data.creator?.full_name })
       setEditing(false)
     }
   }
