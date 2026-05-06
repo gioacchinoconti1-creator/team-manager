@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import TaskSection from '../components/TaskSection'
 import EditorialPlan from '../components/EditorialPlan'
 import Sidebar from '../components/Sidebar'
+import QuickLinks from '../components/QuickLinks'
 
 const todayStr = new Date().toISOString().slice(0,10)
 
@@ -162,7 +163,10 @@ export default function Dashboard() {
       </div>
 
       {/* Main layout */}
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'2rem 1rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
+      <div style={{ maxWidth:1280, margin:'0 auto', padding:'2rem 1rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
+
+        {/* Left sidebar — Quick Links */}
+        <QuickLinks />
 
         {/* Content */}
         <div style={{ flex:1, minWidth:0 }}>
