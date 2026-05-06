@@ -28,7 +28,9 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
   })
 
   const late = !task.done && task.due_date && task.due_date < todayStr
-  const dateLabel = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : null
+  const dateLabel = task.due_date
+    ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' })
+    : null
 
   useEffect(() => {
     supabase.from('profiles').select('id, full_name').then(({ data }) => {
@@ -64,9 +66,11 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
       assigned_to: form.assigned_to || null,
       channel: task.section === 'social' ? form.channel : task.channel,
       priority: task.section === 'tecnico' ? form.priority : task.priority,
-    }).eq('id', task.id).select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), creator:profiles!tasks_created_by_fkey(full_name)').single()
+    }).eq('id', task.id)
+      .select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), creator:profiles!tasks_created_by_fkey(full_name)')
+      .single()
     if (data) {
-     onUpdate({ ...data, assignee_name: data.assignee?.full_name, creator_name: data.creator?.full_name })
+      onUpdate({ ...data, assignee_name: data.assignee?.full_name, creator_name: data.creator?.full_name })
       setEditing(false)
     }
   }
@@ -77,7 +81,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     if (onDelete) onDelete(task.id)
   }
 
-  // Edit mode
+  // ── Edit mode ──────────────────────────────────────────────────────────────
   if (editing) {
     return (
       <div style={{ background:'var(--bg2)', border:'0.5px solid var(--accent)', borderRadius:'var(--radius-lg)', padding:'14px 16px' }}>
@@ -107,8 +111,12 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
             </select>
           </div>
-          <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:52, lineHeight:1.5 }}
-            value={form.description} onChange={e => set('description', e.target.value)} placeholder="Descrizione..." />
+          <textarea
+            style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:52, lineHeight:1.5 }}
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+            placeholder="Descrizione..."
+          />
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={saveEdit} style={{ padding:'7px 14px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer' }}>Salva</button>
             <button onClick={() => setEditing(false)} style={{ padding:'7px 14px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>Annulla</button>
@@ -119,59 +127,88 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     )
   }
 
-  // Normal mode
+  // ── Normal mode ────────────────────────────────────────────────────────────
   return (
     <div style={{
-      background:'var(--bg2)',
-      border:`0.5px solid ${late ? 'rgba(244,91,91,0.35)' : 'var(--border)'}`,
-      borderRadius:'var(--radius-lg)', padding:'14px 16px',
-      opacity: task.done ? 0.45 : 1, transition:'all 0.15s'
+      background: 'var(--bg2)',
+      border: `0.5px solid ${late ? 'rgba(244,91,91,0.35)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-lg)',
+      padding: '14px 16px',
+      opacity: task.done ? 0.45 : 1,
+      transition: 'all 0.15s',
     }}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+
+        {/* Checkbox */}
         <div onClick={toggleDone} style={{
           width:18, height:18, borderRadius:5, flexShrink:0, marginTop:2,
           border: task.done ? 'none' : '1.5px solid var(--border2)',
           background: task.done ? 'var(--green)' : 'transparent',
           display:'flex', alignItems:'center', justifyContent:'center',
-          fontSize:10, color:'white', cursor:'pointer'
+          fontSize:10, color:'white', cursor:'pointer',
         }}>{task.done && '✓'}</div>
 
         <div style={{ flex:1, minWidth:0 }}>
+
+          {/* Title row */}
           <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:6 }}>
-            <div style={{ fontSize:14, fontWeight:500, flex:1, lineHeight:1.4, textDecoration: task.done?'line-through':'none', color: task.done?'var(--text3)':'var(--text)' }}>
+            <div style={{
+              fontSize:14, fontWeight:500, flex:1, lineHeight:1.4,
+              textDecoration: task.done ? 'line-through' : 'none',
+              color: task.done ? 'var(--text3)' : 'var(--text)',
+            }}>
               {task.title}
             </div>
-            <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+
+            {/* Action buttons — always visible */}
+            <div style={{ display:'flex', gap:4, flexShrink:0, alignItems:'center' }}>
               {task.description && (
-                <button onClick={() => setExpanded(e => !e)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)' }}>
+                <button
+                  onClick={() => setExpanded(e => !e)}
+                  style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)', padding:'2px 4px' }}
+                >
                   {expanded ? '▲' : '▼'}
                 </button>
               )}
-              <button onClick={() => setEditing(true)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)' }}>✏️</button>
+              <button
+                onClick={() => setEditing(true)}
+                title="Modifica task"
+                style={{ fontSize:13, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', padding:'2px 4px', lineHeight:1 }}
+              >✏️</button>
             </div>
           </div>
 
+          {/* Description */}
           {expanded && task.description && (
-            <div style={{ fontSize:12, color:'var(--text2)', lineHeight:1.6, marginBottom:8, padding:'10px 12px', borderRadius:8, background:'var(--bg3)', border:'0.5px solid var(--border)', whiteSpace:'pre-wrap' }}>
+            <div style={{
+              fontSize:12, color:'var(--text2)', lineHeight:1.6, marginBottom:8,
+              padding:'10px 12px', borderRadius:8, background:'var(--bg3)',
+              border:'0.5px solid var(--border)', whiteSpace:'pre-wrap',
+            }}>
               {task.description}
             </div>
           )}
 
+          {/* Meta */}
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
             <Badge type={task.type} />
             {task.channel && <ChBadge channel={task.channel} />}
             {task.priority && <PrioBadge priority={task.priority} />}
             {dateLabel && (
-              <span style={{ fontSize:11, fontFamily:'var(--mono)', color: late?'var(--red)':'var(--text2)' }}>
+              <span style={{ fontSize:11, fontFamily:'var(--mono)', color: late ? 'var(--red)' : 'var(--text2)' }}>
                 {late ? '⚠ ' : ''}{dateLabel}
               </span>
             )}
             {task.assignee_name && (
-              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>@{task.assignee_name}</span>
+              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>
+                👤 {task.assignee_name}
+              </span>
             )}
             {creatorName && (
-  <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', opacity:0.7 }}>✍️ {creatorName}</span>
-)}
+              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', opacity:0.7 }}>
+                ✍️ {creatorName}
+              </span>
+            )}
             {task.due_date && (
               <button onClick={openCalendar} style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
                 📅 Reminder
@@ -181,8 +218,12 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               task.drive_link
                 ? <a href={task.drive_link} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'var(--accent2)', fontFamily:'var(--mono)' }}>↗ Drive</a>
                 : <div style={{ display:'flex', gap:4, alignItems:'center' }}>
-                    <input value={driveVal} onChange={e => setDriveVal(e.target.value)} placeholder="Incolla link Drive..."
-                      style={{ fontSize:12, padding:'3px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'var(--bg3)', color:'var(--text)', fontFamily:'var(--mono)', width:180 }} />
+                    <input
+                      value={driveVal}
+                      onChange={e => setDriveVal(e.target.value)}
+                      placeholder="Incolla link Drive..."
+                      style={{ fontSize:12, padding:'3px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'var(--bg3)', color:'var(--text)', fontFamily:'var(--mono)', width:180 }}
+                    />
                     <button onClick={saveDrive} style={{ fontSize:11, padding:'3px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--accent2)', cursor:'pointer' }}>Salva</button>
                   </div>
             )}
