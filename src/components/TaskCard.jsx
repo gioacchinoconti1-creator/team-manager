@@ -16,6 +16,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [driveVal, setDriveVal] = useState(task.drive_link || '')
   const [members, setMembers] = useState([])
+  const creatorName = task.creator_name || ''
   const [form, setForm] = useState({
     title: task.title,
     description: task.description || '',
@@ -168,6 +169,9 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
             {task.assignee_name && (
               <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>@{task.assignee_name}</span>
             )}
+            {creatorName && (
+  <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', opacity:0.7 }}>✍️ {creatorName}</span>
+)}
             {task.due_date && (
               <button onClick={openCalendar} style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
                 📅 Reminder
