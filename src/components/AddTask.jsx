@@ -85,7 +85,7 @@ export default function AddTask({ section, onAdded }) {
             <option value="bassa">Bassa</option>
           </select>
         )}
-        <input style={fieldStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+        <input style={fieldStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required />
         <select style={fieldStyle} value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
           <option value="">Assegna a...</option>
           {members.map(m => (
