@@ -38,7 +38,7 @@ export default function TaskSection({ section }) {
       .select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), creator:profiles!tasks_created_by_fkey(full_name)')
       .eq('section', section)
       .order('due_date', { ascending: true })
-    setTasks((data || []).map(t => ({ ...t, assignee_name: t.assignee?.full_name })))
+    setTasks((data || []).map(t => ({ ...t, assignee_name: t.assignee?.full_name, creator_name: t.creator?.full_name })))
     setLoading(false)
   }
 
