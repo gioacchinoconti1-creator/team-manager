@@ -46,6 +46,7 @@ export default function TaskSection({ section }) {
 
   function onAdded(task) { setTasks(prev => [task, ...prev]) }
   function onUpdate(updated) { setTasks(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t)) }
+  function onDelete(id) { setTasks(prev => prev.filter(t => t.id !== id)) }
 
   const monthTasks = tasks.filter(t => t.due_date?.startsWith(month))
   const doneCount = monthTasks.filter(t => t.done).length
@@ -65,7 +66,6 @@ export default function TaskSection({ section }) {
 
   return (
     <div>
-      {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:'1.5rem' }}>
         {[
           { label:'completati / mese', value:`${doneCount} / ${total}`, color: doneCount===total&&total>0?'var(--green)':undefined },
@@ -79,7 +79,6 @@ export default function TaskSection({ section }) {
         ))}
       </div>
 
-      {/* Filters */}
       <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', background:'var(--bg2)', borderRadius:'var(--radius)', border:'0.5px solid var(--border)', padding:'10px 14px', marginBottom:'1.2rem' }}>
         <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase' }}>Mese</span>
         <Select value={month} onChange={setMonth}>
@@ -106,8 +105,22 @@ export default function TaskSection({ section }) {
 
       {loading ? <Spinner /> : (
         <>
-          {todo.length > 0 && (<><SectionLabel>Da fare</SectionLabel><div style={{ display:'flex', flexDirection:'column', gap:6 }}>{todo.map(t => <TaskCard key={t.id} task={t} onUpdate={onUpdate} />)}</div></>)}
-          {done.length > 0 && (<><SectionLabel>Completati</SectionLabel><div style={{ display:'flex', flexDirection:'column', gap:6 }}>{done.map(t => <TaskCard key={t.id} task={t} onUpdate={onUpdate} />)}</div></>)}
+          {todo.length > 0 && (
+            <>
+              <SectionLabel>Da fare</SectionLabel>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {todo.map(t => <TaskCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />)}
+              </div>
+            </>
+          )}
+          {done.length > 0 && (
+            <>
+              <SectionLabel>Completati</SectionLabel>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {done.map(t => <TaskCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />)}
+              </div>
+            </>
+          )}
           {filtered.length === 0 && <Empty />}
         </>
       )}

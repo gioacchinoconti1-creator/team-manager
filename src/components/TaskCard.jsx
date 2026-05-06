@@ -1,21 +1,46 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, ChBadge, PrioBadge } from './UI'
+import { Badge, ChBadge, PrioBadge, fieldStyle } from './UI'
 
 const todayStr = new Date().toISOString().slice(0,10)
 
-export default function TaskCard({ task, onUpdate, lateBadge }) {
+const TYPE_OPTIONS = {
+  videomaker: [['video','Video'],['image','Immagine'],['altro','Altro']],
+  copywriter:  [['copy','Copy'],['altro','Altro']],
+  tecnico:     [['bug','Bug'],['ticket','Ticket'],['setup','Setup'],['altro','Altro']],
+  social:      [['reel','Reel'],['post','Post'],['story','Story'],['short','Short/TikTok'],['video','Video'],['altro','Altro']],
+}
+
+export default function TaskCard({ task, onUpdate, onDelete }) {
   const [expanded, setExpanded] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [driveVal, setDriveVal] = useState(task.drive_link || '')
+  const [members, setMembers] = useState([])
+  const [form, setForm] = useState({
+    title: task.title,
+    description: task.description || '',
+    type: task.type,
+    due_date: task.due_date || '',
+    assigned_to: task.assigned_to || '',
+    channel: task.channel || 'ig',
+    priority: task.priority || 'media',
+  })
+
   const late = !task.done && task.due_date && task.due_date < todayStr
   const dateLabel = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : null
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, full_name').then(({ data }) => {
+      if (data) setMembers(data)
+    })
+  }, [])
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   function openCalendar() {
     if (!task.due_date) return
     const date = task.due_date.replace(/-/g, '')
-    const title = encodeURIComponent(task.title)
-    const details = encodeURIComponent(task.description || '')
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${date}/${date}&details=${details}&reminders=POPUP,0,POPUP,1440,POPUP,4320`
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.title)}&dates=${date}/${date}&details=${encodeURIComponent(task.description||'')}&reminders=POPUP,0,POPUP,1440,POPUP,4320`
     window.open(url, '_blank')
   }
 
@@ -29,6 +54,71 @@ export default function TaskCard({ task, onUpdate, lateBadge }) {
     if (data) onUpdate(data)
   }
 
+  async function saveEdit() {
+    const { data } = await supabase.from('tasks').update({
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      type: form.type,
+      due_date: form.due_date || null,
+      assigned_to: form.assigned_to || null,
+      channel: task.section === 'social' ? form.channel : task.channel,
+      priority: task.section === 'tecnico' ? form.priority : task.priority,
+    }).eq('id', task.id).select('*, assignee:profiles!tasks_assigned_to_fkey(full_name)').single()
+    if (data) {
+      onUpdate({ ...data, assignee_name: data.assignee?.full_name })
+      setEditing(false)
+    }
+  }
+
+  async function deleteTask() {
+    if (!confirm('Eliminare questo task?')) return
+    await supabase.from('tasks').delete().eq('id', task.id)
+    if (onDelete) onDelete(task.id)
+  }
+
+  // Edit mode
+  if (editing) {
+    return (
+      <div style={{ background:'var(--bg2)', border:'0.5px solid var(--accent)', borderRadius:'var(--radius-lg)', padding:'14px 16px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <input style={{ ...fieldStyle, width:'100%' }} value={form.title} onChange={e => set('title', e.target.value)} placeholder="Titolo..." />
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <select style={fieldStyle} value={form.type} onChange={e => set('type', e.target.value)}>
+              {(TYPE_OPTIONS[task.section] || []).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            {task.section === 'social' && (
+              <select style={fieldStyle} value={form.channel} onChange={e => set('channel', e.target.value)}>
+                <option value="ig">IG / FB</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+              </select>
+            )}
+            {task.section === 'tecnico' && (
+              <select style={fieldStyle} value={form.priority} onChange={e => set('priority', e.target.value)}>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="bassa">Bassa</option>
+              </select>
+            )}
+            <input style={fieldStyle} type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+            <select style={fieldStyle} value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
+              <option value="">Assegna a...</option>
+              {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+            </select>
+          </div>
+          <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:52, lineHeight:1.5 }}
+            value={form.description} onChange={e => set('description', e.target.value)} placeholder="Descrizione..." />
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={saveEdit} style={{ padding:'7px 14px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer' }}>Salva</button>
+            <button onClick={() => setEditing(false)} style={{ padding:'7px 14px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>Annulla</button>
+            <button onClick={deleteTask} style={{ padding:'7px 14px', borderRadius:8, border:'0.5px solid rgba(244,91,91,0.3)', background:'transparent', color:'#f87171', fontSize:13, cursor:'pointer', marginLeft:'auto' }}>Elimina</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Normal mode
   return (
     <div style={{
       background:'var(--bg2)',
@@ -50,11 +140,14 @@ export default function TaskCard({ task, onUpdate, lateBadge }) {
             <div style={{ fontSize:14, fontWeight:500, flex:1, lineHeight:1.4, textDecoration: task.done?'line-through':'none', color: task.done?'var(--text3)':'var(--text)' }}>
               {task.title}
             </div>
-            {task.description && (
-              <button onClick={() => setExpanded(e => !e)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)', flexShrink:0 }}>
-                {expanded ? '▲ chiudi' : '▼ dettagli'}
-              </button>
-            )}
+            <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+              {task.description && (
+                <button onClick={() => setExpanded(e => !e)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)' }}>
+                  {expanded ? '▲' : '▼'}
+                </button>
+              )}
+              <button onClick={() => setEditing(true)} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)' }}>✏️</button>
+            </div>
           </div>
 
           {expanded && task.description && (
@@ -76,7 +169,7 @@ export default function TaskCard({ task, onUpdate, lateBadge }) {
               <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>@{task.assignee_name}</span>
             )}
             {task.due_date && (
-              <button onClick={openCalendar} title="Aggiungi a Google Calendar" style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
+              <button onClick={openCalendar} style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
                 📅 Reminder
               </button>
             )}
