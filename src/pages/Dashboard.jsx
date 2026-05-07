@@ -127,6 +127,7 @@ export default function Dashboard() {
   const [channelFilter, setChannelFilter] = useState('all')
   const [showProfile, setShowProfile] = useState(false)
   const [showSidebar, setShowSidebar] = useState(true)
+  const [showLinks, setShowLinks] = useState(true)
   const [lateCounts, setLateCounts] = useState({})
 
   useEffect(() => {
@@ -151,24 +152,34 @@ export default function Dashboard() {
         <img src="/logo-icon.jpeg" alt="logo" style={{ width:28, height:28, borderRadius:6, flexShrink:0 }} />
         <span style={{ fontSize:14, fontWeight:600 }}>Team Manager</span>
         <div style={{ flex:1 }} />
+
+        {/* Toggle Link utili */}
+        <button
+          onClick={() => setShowLinks(s => !s)}
+          title="Link utili"
+          style={{ fontSize:11, padding:'4px 10px', borderRadius:7, border:'0.5px solid var(--border2)', background: showLinks?'var(--accent)':'transparent', color: showLinks?'white':'var(--text2)', cursor:'pointer', fontFamily:'var(--font)' }}
+        >🔗 Link</button>
+
+        {/* Toggle Team */}
         <button
           onClick={() => setShowSidebar(s => !s)}
           title="Pannello team"
           style={{ fontSize:11, padding:'4px 10px', borderRadius:7, border:'0.5px solid var(--border2)', background: showSidebar?'var(--accent)':'transparent', color: showSidebar?'white':'var(--text2)', cursor:'pointer', fontFamily:'var(--font)' }}
         >👥 Team</button>
+
         <button onClick={() => setShowProfile(true)} style={{ fontSize:11, padding:'4px 10px', borderRadius:7, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontFamily:'var(--font)' }}>
           {profile?.full_name || 'Profilo'} ⚙️
         </button>
         <button onClick={signOut} style={{ fontSize:11, padding:'4px 10px', borderRadius:7, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--font)' }}>Esci</button>
       </div>
 
-      {/* Main layout */}
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'2rem 1rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
+      {/* Main layout — le sidebar sono nel flow normale, NON fixed/absolute */}
+      <div style={{ maxWidth:1400, margin:'0 auto', padding:'2rem 1rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
 
-        {/* Left sidebar — Quick Links */}
-        <QuickLinks />
+        {/* Left sidebar — Quick Links (condizionale, nel flow) */}
+        {showLinks && <QuickLinks />}
 
-        {/* Content */}
+        {/* Content area */}
         <div style={{ flex:1, minWidth:0 }}>
           {/* Tabs */}
           <div style={{ display:'flex', gap:2, marginBottom:'1.5rem', background:'var(--bg2)', borderRadius:'var(--radius)', padding:4, border:'0.5px solid var(--border)', overflowX:'auto' }}>
@@ -229,8 +240,10 @@ export default function Dashboard() {
           {['videomaker','copywriter','tecnico'].includes(activeTab) && <TaskSection section={activeTab} />}
         </div>
 
-        {/* Sidebar */}
-        <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+        {/* Right sidebar — Team (condizionale, nel flow, NON sticky/fixed) */}
+        {showSidebar && (
+          <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+        )}
       </div>
     </div>
   )
