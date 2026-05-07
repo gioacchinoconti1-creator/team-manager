@@ -148,7 +148,7 @@ export default function Dashboard() {
 
       {/* Top bar */}
       <div style={{ background:'var(--bg2)', borderBottom:'0.5px solid var(--border)', padding:'0 1.5rem', display:'flex', alignItems:'center', height:52, gap:12, position:'sticky', top:0, zIndex:10 }}>
-        <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--accent)', boxShadow:'0 0 10px var(--accent)', flexShrink:0 }} />
+        <img src="/logo-icon.jpeg" alt="logo" style={{ width:28, height:28, borderRadius:6, flexShrink:0 }} />
         <span style={{ fontSize:14, fontWeight:600 }}>Team Manager</span>
         <div style={{ flex:1 }} />
         <button

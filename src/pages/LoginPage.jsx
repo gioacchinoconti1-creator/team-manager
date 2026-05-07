@@ -20,11 +20,8 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem', background:'var(--bg)' }}>
       <div style={{ width:'100%', maxWidth:380, background:'var(--bg2)', border:'0.5px solid var(--border2)', borderRadius:'var(--radius-lg)', padding:'2rem', boxShadow:'var(--shadow)' }}>
-        <div style={{ marginBottom:'2rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-            <div style={{ width:10, height:10, borderRadius:'50%', background:'var(--accent)', boxShadow:'0 0 14px var(--accent)' }} />
-            <span style={{ fontSize:17, fontWeight:600 }}>Team Manager</span>
-          </div>
+        <div style={{ marginBottom:'2rem', textAlign:'center' }}>
+          <img src="/logo-full.jpeg" alt="Strategic Advise" style={{ width:'100%', maxWidth:280, borderRadius:8, marginBottom:16 }} />
           <div style={{ fontSize:12, color:'var(--text3)', fontFamily:'var(--mono)' }}>Accedi al tuo spazio di lavoro</div>
         </div>
         <form onSubmit={handleSubmit}>
