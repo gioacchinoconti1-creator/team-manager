@@ -398,6 +398,7 @@ function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeigh
 
   return (
     <div style={{ overflowX: colWidth > 100 ? 'auto' : 'visible' }}>
+      <div style={{ margin:'0 auto', width: colWidth > 100 ? `${colWidth * 7 + 24}px` : '100%' }}>
       <div style={{ display:'grid', gridTemplateColumns:`repeat(7, minmax(${colWidth}px, 1fr))`, gap:4, marginBottom:4, minWidth: colWidth * 7 }}>
         {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => (
           <div key={d} style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', textAlign:'center', padding:'4px 0' }}>{d}</div>
@@ -425,6 +426,7 @@ function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeigh
             </DropZone>
           )
         })}
+      </div>
       </div>
     </div>
   )
@@ -599,20 +601,18 @@ export default function EditorialPlan({ channelFilter }) {
             style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }}
           />
         </div>
-        {/* Controlli altezza e larghezza — solo vista mese */}
-        {view === 'month' && (
-          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'4px 8px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)' }}>
-            <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Altezza</span>
-            <button onClick={() => setRowHeight(h => Math.max(80, h - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-            <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:30, textAlign:'center' }}>{rowHeight}</span>
-            <button onClick={() => setRowHeight(h => Math.min(240, h + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
-            <div style={{ width:'0.5px', height:14, background:'var(--border2)' }} />
-            <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Larghezza</span>
-            <button onClick={() => setColWidth(w => Math.max(80, w - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-            <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:36, textAlign:'center' }}>{colWidth}px</span>
-            <button onClick={() => setColWidth(w => Math.min(300, w + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
-          </div>
-        )}
+        {/* Controlli altezza e larghezza — sempre visibili */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'4px 8px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)' }}>
+          <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Altezza</span>
+          <button onClick={() => setRowHeight(h => Math.max(80, h - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+          <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:30, textAlign:'center' }}>{rowHeight}</span>
+          <button onClick={() => setRowHeight(h => Math.min(240, h + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+          <div style={{ width:'0.5px', height:14, background:'var(--border2)' }} />
+          <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Larghezza</span>
+          <button onClick={() => setColWidth(w => Math.max(80, w - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+          <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:36, textAlign:'center' }}>{colWidth}px</span>
+          <button onClick={() => setColWidth(w => Math.min(300, w + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+        </div>
         <select style={{ ...fieldStyle, fontSize:12, padding:'5px 10px' }} value={statoFilter} onChange={e => setStatoFilter(e.target.value)}>
           <option value="">Tutti gli stati</option>
           {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
