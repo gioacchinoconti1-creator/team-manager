@@ -387,7 +387,7 @@ function WeekView({ items, weekStart, onSelect, onAdd, onDrop }) {
 }
 
 // ── Month View ─────────────────────────────────────────────────────────────────
-function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeight = 120 }) {
+function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeight = 120, colWidth = 100 }) {
   const y = month.getFullYear(); const m = month.getMonth()
   const firstDay = new Date(y, m, 1)
   const daysInMonth = new Date(y, m+1, 0).getDate()
@@ -397,14 +397,14 @@ function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeigh
   for (let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d))
 
   return (
-    <div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, marginBottom:4 }}>
+    <div style={{ overflowX: colWidth > 100 ? 'auto' : 'visible' }}>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(7, minmax(${colWidth}px, 1fr))`, gap:4, marginBottom:4, minWidth: colWidth * 7 }}>
         {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => (
           <div key={d} style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', textAlign:'center', padding:'4px 0' }}>{d}</div>
         ))}
       </div>
       {/* grid con altezza fissa per riga → riquadri sempre uguali */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gridAutoRows:`${rowHeight}px`, gap:4, alignItems:'stretch' }}>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(7, minmax(${colWidth}px, 1fr))`, gridAutoRows:`${rowHeight}px`, gap:4, alignItems:'stretch', minWidth: colWidth * 7 }}>
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} style={{ background:'transparent' }} />
           const ds = localDateStr(day)
@@ -494,6 +494,7 @@ export default function EditorialPlan({ channelFilter }) {
   const [popover, setPopover] = useState(null) // { dateStr, items }
   const [currentDate, setCurrentDate] = useState(new Date())
   const [rowHeight, setRowHeight] = useState(120)
+  const [colWidth, setColWidth] = useState(100) // larghezza minima colonna in px
   const datePickerRef = useState(null)
   const [weekStart, setWeekStart] = useState(getMonday(new Date()))
   const [currentMonth, setCurrentMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
@@ -598,13 +599,18 @@ export default function EditorialPlan({ channelFilter }) {
             style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }}
           />
         </div>
-        {/* Controllo altezza righe — solo vista mese */}
+        {/* Controlli altezza e larghezza — solo vista mese */}
         {view === 'month' && (
-          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 8px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'4px 8px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)' }}>
             <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Altezza</span>
             <button onClick={() => setRowHeight(h => Math.max(80, h - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
             <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:30, textAlign:'center' }}>{rowHeight}</span>
             <button onClick={() => setRowHeight(h => Math.min(240, h + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+            <div style={{ width:'0.5px', height:14, background:'var(--border2)' }} />
+            <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Larghezza</span>
+            <button onClick={() => setColWidth(w => Math.max(80, w - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+            <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:36, textAlign:'center' }}>{colWidth}px</span>
+            <button onClick={() => setColWidth(w => Math.min(300, w + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
           </div>
         )}
         <select style={{ ...fieldStyle, fontSize:12, padding:'5px 10px' }} value={statoFilter} onChange={e => setStatoFilter(e.target.value)}>
@@ -633,7 +639,7 @@ export default function EditorialPlan({ channelFilter }) {
         <>
           {view==='day' && <DayView items={filtered} date={currentDate} onSelect={setSelectedItem} onAdd={handleAdd} />}
           {view==='week' && <WeekView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
-          {view==='month' && <MonthView items={filtered} month={currentMonth} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} onShowMore={(ds, its) => setPopover({ dateStr:ds, items:its })} rowHeight={rowHeight} />}
+          {view==='month' && <MonthView items={filtered} month={currentMonth} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} onShowMore={(ds, its) => setPopover({ dateStr:ds, items:its })} rowHeight={rowHeight} colWidth={colWidth} />}
           {view==='timeline' && <TimelineView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
         </>
       )}
