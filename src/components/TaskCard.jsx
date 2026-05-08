@@ -81,7 +81,6 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     if (onDelete) onDelete(task.id)
   }
 
-  // ── Edit mode ──────────────────────────────────────────────────────────────
   if (editing) {
     return (
       <div style={{ background:'var(--bg2)', border:'0.5px solid var(--accent)', borderRadius:'var(--radius-lg)', padding:'14px 16px' }}>
@@ -127,7 +126,6 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     )
   }
 
-  // ── Normal mode ────────────────────────────────────────────────────────────
   return (
     <div style={{
       background: 'var(--bg2)',
@@ -139,7 +137,6 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     }}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
 
-        {/* Checkbox */}
         <div onClick={toggleDone} style={{
           width:18, height:18, borderRadius:5, flexShrink:0, marginTop:2,
           border: task.done ? 'none' : '1.5px solid var(--border2)',
@@ -151,7 +148,8 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
         <div style={{ flex:1, minWidth:0 }}>
 
           {/* Title row */}
-          <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:6 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:8 }}>
+
             <div style={{
               fontSize:14, fontWeight:500, flex:1, lineHeight:1.4,
               textDecoration: task.done ? 'line-through' : 'none',
@@ -160,12 +158,53 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               {task.title}
             </div>
 
-            {/* Action buttons — always visible */}
-            <div style={{ display:'flex', gap:4, flexShrink:0, alignItems:'center' }}>
+            {/* Meta info in alto a destra */}
+            <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0, flexWrap:'wrap', justifyContent:'flex-end' }}>
+              {dateLabel && (
+                <span style={{
+                  fontSize:11, fontFamily:'var(--mono)',
+                  color: late ? 'var(--red)' : 'var(--text3)',
+                  display:'flex', alignItems:'center', gap:3,
+                }}>
+                  {late ? '⚠️' : '📅'} {dateLabel}
+                </span>
+              )}
+              {task.assignee_name && (
+                <span style={{
+                  fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)',
+                  display:'flex', alignItems:'center', gap:3,
+                  padding:'2px 7px', borderRadius:20,
+                  background:'var(--bg3)', border:'0.5px solid var(--border)',
+                }}>
+                  👤 {task.assignee_name}
+                </span>
+              )}
+              {creatorName && (
+                <span style={{
+                  fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)',
+                  display:'flex', alignItems:'center', gap:3,
+                  padding:'2px 7px', borderRadius:20,
+                  background:'var(--bg3)', border:'0.5px solid var(--border)',
+                  opacity: 0.7,
+                }}>
+                  ✏️ {creatorName}
+                </span>
+              )}
+            </div>
+
+            {/* Separatore visivo */}
+            <div style={{ width:'0.5px', height:20, background:'var(--border)', flexShrink:0, alignSelf:'center' }} />
+
+            {/* Azioni */}
+            <div style={{ display:'flex', gap:6, flexShrink:0, alignItems:'center' }}>
               {task.description && (
                 <button
                   onClick={() => setExpanded(e => !e)}
-                  style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--mono)', padding:'2px 4px' }}
+                  title={expanded ? 'Chiudi dettagli' : 'Espandi dettagli'}
+                  style={{
+                    fontSize:15, color:'var(--text3)', background:'none', border:'none',
+                    cursor:'pointer', padding:'4px 8px', lineHeight:1, borderRadius:6,
+                  }}
                 >
                   {expanded ? '▲' : '▼'}
                 </button>
@@ -173,7 +212,10 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               <button
                 onClick={() => setEditing(true)}
                 title="Modifica task"
-                style={{ fontSize:13, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', padding:'2px 4px', lineHeight:1 }}
+                style={{
+                  fontSize:15, color:'var(--text3)', background:'none', border:'none',
+                  cursor:'pointer', padding:'4px 8px', lineHeight:1, borderRadius:6,
+                }}
               >✏️</button>
             </div>
           </div>
@@ -189,26 +231,11 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
             </div>
           )}
 
-          {/* Meta */}
+          {/* Badge in basso */}
           <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
             <Badge type={task.type} />
             {task.channel && <ChBadge channel={task.channel} />}
             {task.priority && <PrioBadge priority={task.priority} />}
-            {dateLabel && (
-              <span style={{ fontSize:11, fontFamily:'var(--mono)', color: late ? 'var(--red)' : 'var(--text2)' }}>
-                {late ? '⚠ ' : ''}{dateLabel}
-              </span>
-            )}
-            {task.assignee_name && (
-              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)' }}>
-                👤 {task.assignee_name}
-              </span>
-            )}
-            {creatorName && (
-              <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', opacity:0.7 }}>
-                ✍️ {creatorName}
-              </span>
-            )}
             {task.due_date && (
               <button onClick={openCalendar} style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
                 📅 Reminder
@@ -228,6 +255,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
                   </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
