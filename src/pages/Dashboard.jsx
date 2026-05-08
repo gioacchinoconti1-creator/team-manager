@@ -205,7 +205,11 @@ export default function Dashboard() {
             <>
               <div style={{ display:'flex', gap:6, marginBottom:'1rem' }}>
                 {[['tasks','Task'],['editorial','Piano Editoriale']].map(([v,l]) => (
-                  <button key={v} onClick={() => setSocialSubView(v)} style={{ padding:'5px 16px', borderRadius:20, border:'0.5px solid var(--border2)', background: socialSubView===v?'var(--accent)':'transparent', color: socialSubView===v?'white':'var(--text2)', borderColor: socialSubView===v?'var(--accent)':'var(--border2)', fontSize:12, fontWeight: socialSubView===v?500:400, cursor:'pointer', fontFamily:'var(--font)' }}>{l}</button>
+                  <button key={v} onClick={() => {
+                    setSocialSubView(v)
+                    if (v === 'editorial') { setShowSidebar(false); setShowLinks(false) }
+                    if (v === 'tasks') { setShowSidebar(true); setShowLinks(true) }
+                  }} style={{ padding:'5px 16px', borderRadius:20, border:'0.5px solid var(--border2)', background: socialSubView===v?'var(--accent)':'transparent', color: socialSubView===v?'white':'var(--text2)', borderColor: socialSubView===v?'var(--accent)':'var(--border2)', fontSize:12, fontWeight: socialSubView===v?500:400, cursor:'pointer', fontFamily:'var(--font)' }}>{l}</button>
                 ))}
               </div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'1rem' }}>
