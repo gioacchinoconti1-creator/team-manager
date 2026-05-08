@@ -300,6 +300,24 @@ function DraggableItem({ item, onSelect, small = false }) {
   )
 }
 
+// ── Day Popover ("+N altri" cliccabile) ───────────────────────────────────────
+function DayPopover({ items, dateStr, onSelect, onClose }) {
+  const d = parseDate(dateStr)
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:150, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+      <div style={{ background:'var(--bg2)', border:'0.5px solid var(--border2)', borderRadius:'var(--radius-lg)', padding:'1rem', width:'100%', maxWidth:320, maxHeight:'70vh', overflowY:'auto', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+          <span style={{ fontSize:13, fontWeight:600 }}>{d.getDate()} {MONTH_NAMES[d.getMonth()]}</span>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:18 }}>×</button>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {items.map(item => <DraggableItem key={item.id} item={item} onSelect={(i) => { onSelect(i); onClose() }} />)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Drop Zone wrapper ──────────────────────────────────────────────────────────
 function DropZone({ dateStr, onDrop, children, style }) {
   const [over, setOver] = useState(false)
@@ -369,7 +387,7 @@ function WeekView({ items, weekStart, onSelect, onAdd, onDrop }) {
 }
 
 // ── Month View ─────────────────────────────────────────────────────────────────
-function MonthView({ items, month, onSelect, onAdd, onDrop }) {
+function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore }) {
   const y = month.getFullYear(); const m = month.getMonth()
   const firstDay = new Date(y, m, 1)
   const daysInMonth = new Date(y, m+1, 0).getDate()
@@ -406,7 +424,7 @@ function MonthView({ items, month, onSelect, onAdd, onDrop }) {
                 {dayItems.slice(0,3).map(item => (
                   <DraggableItem key={item.id} item={item} onSelect={onSelect} small />
                 ))}
-                {dayItems.length > 3 && <div style={{ fontSize:9, color:'var(--text3)', fontFamily:'var(--mono)' }}>+{dayItems.length-3} altri</div>}
+                {dayItems.length > 3 && <div onClick={e => { e.stopPropagation(); onShowMore(ds, dayItems) }} style={{ fontSize:9, color:'var(--accent)', fontFamily:'var(--mono)', cursor:'pointer', fontWeight:500 }}>+{dayItems.length-3} altri</div>}
               </div>
             </DropZone>
           )
@@ -477,7 +495,9 @@ export default function EditorialPlan({ channelFilter }) {
   const [addPrefillChannel, setAddPrefillChannel] = useState('')
   const [statoFilter, setStatoFilter] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
+  const [popover, setPopover] = useState(null) // { dateStr, items }
   const [currentDate, setCurrentDate] = useState(new Date())
+  const datePickerRef = useState(null)
   const [weekStart, setWeekStart] = useState(getMonday(new Date()))
   const [currentMonth, setCurrentMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
 
@@ -537,6 +557,13 @@ export default function EditorialPlan({ channelFilter }) {
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
   }
 
+  function goToDate(ds) {
+    const d = parseDate(ds)
+    setCurrentDate(d)
+    setWeekStart(getMonday(d))
+    setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1))
+  }
+
   function getNavLabel() {
     if (view==='day') { const d=currentDate; return `${DAY_NAMES_FULL[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` }
     if (view==='week'||view==='timeline') { const end=addDays(weekStart,6); return `${formatDate(localDateStr(weekStart))} — ${formatDate(localDateStr(end))}` }
@@ -548,6 +575,7 @@ export default function EditorialPlan({ channelFilter }) {
   return (
     <div>
       {selectedItem && <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} onUpdate={onUpdate} onDelete={onDelete} onDuplicate={onDuplicate} />}
+      {popover && <DayPopover items={popover.items} dateStr={popover.dateStr} onSelect={setSelectedItem} onClose={() => setPopover(null)} />}
 
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'1.2rem', flexWrap:'wrap' }}>
         <div style={{ display:'flex', gap:2, background:'var(--bg2)', borderRadius:'var(--radius)', padding:3, border:'0.5px solid var(--border)' }}>
@@ -559,6 +587,20 @@ export default function EditorialPlan({ channelFilter }) {
         <span style={{ fontSize:13, fontWeight:500, minWidth:160, textAlign:'center' }}>{getNavLabel()}</span>
         <button onClick={navNext} style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)', cursor:'pointer', fontSize:14, color:'var(--text2)' }}>→</button>
         <button onClick={goToday} style={{ padding:'5px 12px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:12, cursor:'pointer' }}>Oggi</button>
+        {/* Date picker nascosto — si apre cliccando 📅 */}
+        <div style={{ position:'relative' }}>
+          <button
+            onClick={() => document.getElementById('ped-datepicker').showPicker?.() || document.getElementById('ped-datepicker').focus()}
+            style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}
+            title="Vai a data"
+          >📅</button>
+          <input
+            id="ped-datepicker"
+            type="date"
+            onChange={e => { if (e.target.value) goToDate(e.target.value) }}
+            style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }}
+          />
+        </div>
         <select style={{ ...fieldStyle, fontSize:12, padding:'5px 10px' }} value={statoFilter} onChange={e => setStatoFilter(e.target.value)}>
           <option value="">Tutti gli stati</option>
           {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
@@ -585,7 +627,7 @@ export default function EditorialPlan({ channelFilter }) {
         <>
           {view==='day' && <DayView items={filtered} date={currentDate} onSelect={setSelectedItem} onAdd={handleAdd} />}
           {view==='week' && <WeekView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
-          {view==='month' && <MonthView items={filtered} month={currentMonth} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
+          {view==='month' && <MonthView items={filtered} month={currentMonth} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} onShowMore={(ds, its) => setPopover({ dateStr:ds, items:its })} />}
           {view==='timeline' && <TimelineView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
         </>
       )}
