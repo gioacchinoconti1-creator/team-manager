@@ -174,7 +174,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main layout — le sidebar sono nel flow normale, NON fixed/absolute */}
-      <div style={{ maxWidth:1400, margin:'0 auto', padding:'2rem 1rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
+      <div style={{ maxWidth:'100%', margin:'0 auto', padding:'2rem 1.5rem', display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
 
         {/* Left sidebar — Quick Links (condizionale, nel flow) */}
         {showLinks && <QuickLinks />}
