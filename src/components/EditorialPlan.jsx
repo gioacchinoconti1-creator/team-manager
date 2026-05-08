@@ -19,8 +19,6 @@ const CH_COLOR = {
   mail:    { bg:'#F59E0B', light:'rgba(245,158,11,0.12)', text:'#F59E0B', border:'rgba(245,158,11,0.35)', label:'Mail' },
 }
 
-// ── Timezone-safe date utilities ──────────────────────────────────────────────
-// Mai usare toISOString() per le date locali: converte in UTC e scala il giorno
 function localDateStr(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -29,7 +27,6 @@ function localDateStr(date) {
 }
 
 function parseDate(ds) {
-  // Forza interpretazione locale aggiungendo T00:00:00 (senza Z)
   return new Date(ds + 'T00:00:00')
 }
 
@@ -54,7 +51,6 @@ function formatDate(ds) {
   return d.toLocaleDateString('it-IT', { day:'numeric', month:'short' })
 }
 
-// ── Add Form ──────────────────────────────────────────────────────────────────
 function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
   const { profile } = useAuth()
   const [form, setForm] = useState({
@@ -114,7 +110,6 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
   )
 }
 
-// ── Edit/Duplicate Form ────────────────────────────────────────────────────────
 function EditForm({ initialData, mode, onSave, onCancel, saving }) {
   const [form, setForm] = useState({ ...initialData, title: mode === 'duplicate' ? initialData.title + ' (copia)' : initialData.title })
   function set(k,v) { setForm(f => ({...f,[k]:v})) }
@@ -148,7 +143,7 @@ function EditForm({ initialData, mode, onSave, onCancel, saving }) {
       <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:40, marginBottom:12, lineHeight:1.5 }} value={form.notes||''} onChange={e => set('notes',e.target.value)} placeholder="Note interne..." />
       <div style={{ display:'flex', gap:8 }}>
         <button onClick={() => onSave(form)} disabled={saving} style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer', opacity: saving?0.6:1 }}>
-          {saving ? 'Salvataggio...' : mode === 'duplicate' ? '📋 Salva copia' : '💾 Salva modifiche'}
+          {saving ? 'Salvataggio...' : mode === 'duplicate' ? 'Salva copia' : 'Salva modifiche'}
         </button>
         <button onClick={onCancel} style={{ padding:'8px 14px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>Annulla</button>
       </div>
@@ -156,7 +151,6 @@ function EditForm({ initialData, mode, onSave, onCancel, saving }) {
   )
 }
 
-// ── Detail Modal ───────────────────────────────────────────────────────────────
 function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
   if (!item) return null
   const [mode, setMode] = useState('view')
@@ -208,7 +202,6 @@ function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div style={{ background:'var(--bg2)', border:`1px solid ${c.border}`, borderRadius:'var(--radius-lg)', padding:'1.5rem', width:'100%', maxWidth:540, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
-
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:'1rem' }}>
           <div style={{ flex:1 }}>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
@@ -220,7 +213,6 @@ function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
           </div>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:20, flexShrink:0 }}>×</button>
         </div>
-
         {mode === 'view' && (
           <>
             <div style={{ marginBottom:14 }}>
@@ -229,14 +221,12 @@ function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
                 {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
               </select>
             </div>
-
             {[['Brief', item.brief],[captionLabel, item.caption],[hashLabel, item.hashtags],['CTA', item.cta],['Note', item.notes]].filter(([,v])=>v).map(([label,value]) => (
               <div key={label} style={{ marginBottom:12 }}>
                 <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
                 <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.6, padding:'8px 10px', borderRadius:7, background:'var(--bg3)', whiteSpace:'pre-wrap' }}>{value}</div>
               </div>
             ))}
-
             <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:'1rem', paddingTop:'1rem', borderTop:'0.5px solid var(--border)' }}>
               {item.drive_link && <a href={item.drive_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--accent2)', fontFamily:'var(--mono)' }}>↗ Drive</a>}
               {item.published_link && <a href={item.published_link} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--green)', fontFamily:'var(--mono)' }}>↗ Pubblicato</a>}
@@ -244,23 +234,18 @@ function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
                 <button onClick={() => { const d=item.publish_date.replace(/-/g,''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(item.title)}&dates=${d}/${d}&reminders=POPUP,0,POPUP,1440,POPUP,4320`,'_blank') }}
                   style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer' }}>📅 Reminder</button>
               )}
-              <button onClick={() => setMode('edit')}
-                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:`0.5px solid ${c.border}`, background:'transparent', color: c.text, cursor:'pointer' }}>✏️ Modifica</button>
-              <button onClick={() => setMode('duplicate')}
-                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer' }}>📋 Duplica</button>
-              <button onClick={deleteItem}
-                style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid rgba(244,91,91,0.3)', background:'transparent', color:'#f87171', cursor:'pointer', marginLeft:'auto' }}>Elimina</button>
+              <button onClick={() => setMode('edit')} style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:`0.5px solid ${c.border}`, background:'transparent', color: c.text, cursor:'pointer' }}>✏️ Modifica</button>
+              <button onClick={() => setMode('duplicate')} style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer' }}>📋 Duplica</button>
+              <button onClick={deleteItem} style={{ fontSize:12, padding:'4px 10px', borderRadius:6, border:'0.5px solid rgba(244,91,91,0.3)', background:'transparent', color:'#f87171', cursor:'pointer', marginLeft:'auto' }}>Elimina</button>
             </div>
           </>
         )}
-
         {mode === 'edit' && (
           <>
             <div style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:4 }}>Modifica contenuto</div>
             <EditForm initialData={item} mode="edit" onSave={handleSaveEdit} onCancel={() => setMode('view')} saving={saving} />
           </>
         )}
-
         {mode === 'duplicate' && (
           <>
             <div style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:4 }}>Duplica contenuto</div>
@@ -273,24 +258,14 @@ function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
   )
 }
 
-// ── Draggable Item (usato in Week, Month, Timeline) ────────────────────────────
 function DraggableItem({ item, onSelect, small = false }) {
   const c = CH_COLOR[item.channel] || { light:'var(--bg3)', text:'var(--text2)', border:'var(--border)' }
   return (
     <div
       draggable
-      onDragStart={e => {
-        e.dataTransfer.setData('itemId', item.id)
-        e.dataTransfer.effectAllowed = 'move'
-      }}
+      onDragStart={e => { e.dataTransfer.setData('itemId', item.id); e.dataTransfer.effectAllowed = 'move' }}
       onClick={() => onSelect(item)}
-      style={{
-        background: c.light, border:`0.5px solid ${c.border}`,
-        borderRadius: small ? 3 : 6,
-        padding: small ? '2px 4px' : '4px 6px',
-        cursor:'grab', overflow:'hidden',
-        userSelect:'none',
-      }}
+      style={{ background: c.light, border:`0.5px solid ${c.border}`, borderRadius: small ? 3 : 6, padding: small ? '2px 4px' : '4px 6px', cursor:'grab', overflow:'hidden', userSelect:'none' }}
       onMouseEnter={e => e.currentTarget.style.opacity='0.75'}
       onMouseLeave={e => e.currentTarget.style.opacity='1'}
     >
@@ -300,7 +275,6 @@ function DraggableItem({ item, onSelect, small = false }) {
   )
 }
 
-// ── Day Popover ("+N altri" cliccabile) ───────────────────────────────────────
 function DayPopover({ items, dateStr, onSelect, onClose }) {
   const d = parseDate(dateStr)
   return (
@@ -318,7 +292,6 @@ function DayPopover({ items, dateStr, onSelect, onClose }) {
   )
 }
 
-// ── Drop Zone wrapper ──────────────────────────────────────────────────────────
 function DropZone({ dateStr, onDrop, children, style }) {
   const [over, setOver] = useState(false)
   return (
@@ -333,7 +306,6 @@ function DropZone({ dateStr, onDrop, children, style }) {
   )
 }
 
-// ── Day View ───────────────────────────────────────────────────────────────────
 function DayView({ items, date, onSelect, onAdd }) {
   const ds = localDateStr(date)
   const dayItems = items.filter(i => i.publish_date === ds)
@@ -356,22 +328,27 @@ function DayView({ items, date, onSelect, onAdd }) {
   )
 }
 
-// ── Week View ──────────────────────────────────────────────────────────────────
 function WeekView({ items, weekStart, onSelect, onAdd, onDrop }) {
   const days = Array.from({ length:7 }, (_,i) => addDays(weekStart, i))
   return (
     <div style={{ overflowX:'auto' }}>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7, minmax(110px, 1fr))', gap:6, minWidth:700 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7, minmax(130px, 1fr))', gap:6, minWidth:700, alignItems:'stretch' }}>
         {days.map(day => {
           const ds = localDateStr(day)
           const isToday = ds === todayStr
           const dayItems = items.filter(item => item.publish_date === ds)
           return (
-            <DropZone key={ds} dateStr={ds} onDrop={onDrop} style={{ background: isToday?'rgba(124,108,250,0.06)':'var(--bg2)', border:`0.5px solid ${isToday?'var(--accent)':'var(--border)'}`, borderRadius:'var(--radius-lg)', padding:'10px 8px', minHeight:120 }}>
+            <DropZone key={ds} dateStr={ds} onDrop={onDrop} style={{
+              background: isToday ? 'rgba(124,108,250,0.06)' : 'var(--bg2)',
+              border: `0.5px solid ${isToday ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '10px 8px',
+              minHeight: dayItems.length === 0 ? 120 : 'unset',
+            }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                 <div>
                   <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.04em' }}>{DAY_NAMES_SHORT[day.getDay()]}</div>
-                  <div style={{ fontSize:18, fontWeight:600, color: isToday?'var(--accent)':'var(--text)', lineHeight:1 }}>{day.getDate()}</div>
+                  <div style={{ fontSize:18, fontWeight:600, color: isToday ? 'var(--accent)' : 'var(--text)', lineHeight:1 }}>{day.getDate()}</div>
                 </div>
                 <button onClick={() => onAdd(ds)} style={{ width:20, height:20, borderRadius:'50%', border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
               </div>
@@ -386,8 +363,7 @@ function WeekView({ items, weekStart, onSelect, onAdd, onDrop }) {
   )
 }
 
-// ── Month View ─────────────────────────────────────────────────────────────────
-function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeight = 120, colWidth = 100 }) {
+function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore }) {
   const y = month.getFullYear(); const m = month.getMonth()
   const firstDay = new Date(y, m, 1)
   const daysInMonth = new Date(y, m+1, 0).getDate()
@@ -397,15 +373,13 @@ function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeigh
   for (let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d))
 
   return (
-    <div style={{ overflowX: colWidth > 100 ? 'auto' : 'visible' }}>
-      <div style={{ margin:'0 auto', width: colWidth > 100 ? `${colWidth * 7 + 24}px` : '100%' }}>
-      <div style={{ display:'grid', gridTemplateColumns:`repeat(7, minmax(${colWidth}px, 1fr))`, gap:4, marginBottom:4, minWidth: colWidth * 7 }}>
+    <div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, marginBottom:4 }}>
         {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => (
           <div key={d} style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', textAlign:'center', padding:'4px 0' }}>{d}</div>
         ))}
       </div>
-      {/* grid con altezza fissa per riga → riquadri sempre uguali */}
-      <div style={{ display:'grid', gridTemplateColumns:`repeat(7, minmax(${colWidth}px, 1fr))`, gridAutoRows:`${rowHeight}px`, gap:4, alignItems:'stretch', minWidth: colWidth * 7 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gridAutoRows:'120px', gap:4, alignItems:'stretch' }}>
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} style={{ background:'transparent' }} />
           const ds = localDateStr(day)
@@ -418,21 +392,21 @@ function MonthView({ items, month, onSelect, onAdd, onDrop, onShowMore, rowHeigh
                 <button onClick={() => onAdd(ds)} style={{ width:16, height:16, borderRadius:'50%', border:'none', background:'transparent', color:'var(--text3)', cursor:'pointer', fontSize:12, lineHeight:1 }}>+</button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:2, flex:1, overflow:'hidden' }}>
-                {dayItems.slice(0,3).map(item => (
-                  <DraggableItem key={item.id} item={item} onSelect={onSelect} small />
-                ))}
-                {dayItems.length > 3 && <div onClick={e => { e.stopPropagation(); onShowMore(ds, dayItems) }} style={{ fontSize:9, color:'var(--accent)', fontFamily:'var(--mono)', cursor:'pointer', fontWeight:500 }}>+{dayItems.length-3} altri</div>}
+                {dayItems.slice(0,3).map(item => <DraggableItem key={item.id} item={item} onSelect={onSelect} small />)}
+                {dayItems.length > 3 && (
+                  <div onClick={e => { e.stopPropagation(); onShowMore(ds, dayItems) }} style={{ fontSize:9, color:'var(--accent)', fontFamily:'var(--mono)', cursor:'pointer', fontWeight:500 }}>
+                    +{dayItems.length-3} altri
+                  </div>
+                )}
               </div>
             </DropZone>
           )
         })}
       </div>
-      </div>
     </div>
   )
 }
 
-// ── Timeline View ──────────────────────────────────────────────────────────────
 function TimelineView({ items, weekStart, onSelect, onAdd, onDrop }) {
   const days = Array.from({ length:7 }, (_,i) => addDays(weekStart, i))
   const channels = ['youtube','ig','tiktok','mail']
@@ -483,7 +457,6 @@ function TimelineView({ items, weekStart, onSelect, onAdd, onDrop }) {
   )
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 export default function EditorialPlan({ channelFilter }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -493,11 +466,8 @@ export default function EditorialPlan({ channelFilter }) {
   const [addPrefillChannel, setAddPrefillChannel] = useState('')
   const [statoFilter, setStatoFilter] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
-  const [popover, setPopover] = useState(null) // { dateStr, items }
+  const [popover, setPopover] = useState(null)
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [rowHeight, setRowHeight] = useState(120)
-  const [colWidth, setColWidth] = useState(100) // larghezza minima colonna in px
-  const datePickerRef = useState(null)
   const [weekStart, setWeekStart] = useState(getMonday(new Date()))
   const [currentMonth, setCurrentMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
 
@@ -513,27 +483,14 @@ export default function EditorialPlan({ channelFilter }) {
   function onUpdate(updated) { setItems(prev => prev.map(i => i.id===updated.id ? updated : i)); setSelectedItem(null) }
   function onDelete(id) { setItems(prev => prev.filter(i => i.id !== id)) }
   function onDuplicate(item) { setItems(prev => [...prev, item]) }
-
   function handleAdd(date, ch) { setAddPrefillDate(date); setAddPrefillChannel(ch||''); setShowAdd(true) }
 
-  // ── Drag & Drop handler ──────────────────────────────────────────────────────
   async function handleDrop(itemId, newDateStr) {
     const item = items.find(i => String(i.id) === String(itemId))
     if (!item || item.publish_date === newDateStr) return
-
-    // Aggiorna ottimisticamente in UI
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, publish_date: newDateStr } : i))
-
-    // Persiste su Supabase
-    const { error } = await supabase
-      .from('editorial_plan')
-      .update({ publish_date: newDateStr })
-      .eq('id', item.id)
-
-    if (error) {
-      // Rollback se errore
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, publish_date: item.publish_date } : i))
-    }
+    const { error } = await supabase.from('editorial_plan').update({ publish_date: newDateStr }).eq('id', item.id)
+    if (error) setItems(prev => prev.map(i => i.id === item.id ? { ...i, publish_date: item.publish_date } : i))
   }
 
   const filtered = items.filter(i => {
@@ -556,11 +513,9 @@ export default function EditorialPlan({ channelFilter }) {
     const now = new Date(); setCurrentDate(now); setWeekStart(getMonday(now))
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
   }
-
   function goToDate(ds) {
     const d = parseDate(ds)
-    setCurrentDate(d)
-    setWeekStart(getMonday(d))
+    setCurrentDate(d); setWeekStart(getMonday(d))
     setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1))
   }
 
@@ -587,31 +542,13 @@ export default function EditorialPlan({ channelFilter }) {
         <span style={{ fontSize:13, fontWeight:500, minWidth:160, textAlign:'center' }}>{getNavLabel()}</span>
         <button onClick={navNext} style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)', cursor:'pointer', fontSize:14, color:'var(--text2)' }}>→</button>
         <button onClick={goToday} style={{ padding:'5px 12px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:12, cursor:'pointer' }}>Oggi</button>
-        {/* Date picker nascosto — si apre cliccando 📅 */}
         <div style={{ position:'relative' }}>
           <button
             onClick={() => document.getElementById('ped-datepicker').showPicker?.() || document.getElementById('ped-datepicker').focus()}
             style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}
             title="Vai a data"
           >📅</button>
-          <input
-            id="ped-datepicker"
-            type="date"
-            onChange={e => { if (e.target.value) goToDate(e.target.value) }}
-            style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }}
-          />
-        </div>
-        {/* Controlli altezza e larghezza — sempre visibili */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'4px 8px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)' }}>
-          <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Altezza</span>
-          <button onClick={() => setRowHeight(h => Math.max(80, h - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-          <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:30, textAlign:'center' }}>{rowHeight}</span>
-          <button onClick={() => setRowHeight(h => Math.min(240, h + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
-          <div style={{ width:'0.5px', height:14, background:'var(--border2)' }} />
-          <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>Larghezza</span>
-          <button onClick={() => setColWidth(w => Math.max(80, w - 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-          <span style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)', minWidth:36, textAlign:'center' }}>{colWidth}px</span>
-          <button onClick={() => setColWidth(w => Math.min(300, w + 20))} style={{ width:20, height:20, borderRadius:4, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+          <input id="ped-datepicker" type="date" onChange={e => { if (e.target.value) goToDate(e.target.value) }} style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }} />
         </div>
         <select style={{ ...fieldStyle, fontSize:12, padding:'5px 10px' }} value={statoFilter} onChange={e => setStatoFilter(e.target.value)}>
           <option value="">Tutti gli stati</option>
@@ -637,9 +574,9 @@ export default function EditorialPlan({ channelFilter }) {
 
       {loading ? <Spinner /> : (
         <>
-          {view==='day' && <DayView items={filtered} date={currentDate} onSelect={setSelectedItem} onAdd={handleAdd} />}
-          {view==='week' && <WeekView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
-          {view==='month' && <MonthView items={filtered} month={currentMonth} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} onShowMore={(ds, its) => setPopover({ dateStr:ds, items:its })} rowHeight={rowHeight} colWidth={colWidth} />}
+          {view==='day'      && <DayView      items={filtered} date={currentDate}   onSelect={setSelectedItem} onAdd={handleAdd} />}
+          {view==='week'     && <WeekView     items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
+          {view==='month'    && <MonthView    items={filtered} month={currentMonth}  onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} onShowMore={(ds, its) => setPopover({ dateStr:ds, items:its })} />}
           {view==='timeline' && <TimelineView items={filtered} weekStart={weekStart} onSelect={setSelectedItem} onAdd={handleAdd} onDrop={handleDrop} />}
         </>
       )}
