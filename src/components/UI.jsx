@@ -7,8 +7,8 @@ export const TYPE_LABELS = {
   video:'Video', image:'Immagine', copy:'Copy', reel:'Reel', post:'Post',
   story:'Story', short:'Short', ticket:'Ticket', bug:'Bug', setup:'Setup', altro:'Altro'
 }
-export const CH_LABELS = { youtube:'YouTube', ig:'IG / FB', tiktok:'TikTok' }
-export const CH_CLASS  = { youtube:'ch-yt', ig:'ch-ig', tiktok:'ch-tt' }
+export const CH_LABELS = { youtube:'YouTube', ig:'IG / FB', tiktok:'TikTok', altro:'Altro' }
+export const CH_CLASS  = { youtube:'ch-yt', ig:'ch-ig', tiktok:'ch-tt', altro:'ch-altro' }
 
 const badgeBase = { fontSize:10, padding:'2px 8px', borderRadius:20, fontWeight:500, fontFamily:'var(--mono)', display:'inline-block' }
 const badgeColors = {
@@ -26,6 +26,7 @@ const badgeColors = {
   'ch-yt':        { background:'rgba(244,91,91,0.15)',   color:'#f87171' },
   'ch-ig':        { background:'rgba(124,108,250,0.15)', color:'var(--accent2)' },
   'ch-tt':        { background:'rgba(62,207,142,0.12)',  color:'var(--green)' },
+  'ch-altro':     { background:'var(--bg3)',             color:'var(--text2)' },
   'prio-alta':    { background:'rgba(244,91,91,0.15)',   color:'#f87171' },
   'prio-media':   { background:'rgba(245,158,11,0.12)',  color:'#fbbf24' },
   'prio-bassa':   { background:'var(--bg3)',             color:'var(--text3)' },
@@ -42,7 +43,7 @@ export function Badge({ type, children }) {
 }
 
 export function ChBadge({ channel }) {
-  const cls = CH_CLASS[channel] || ''
+  const cls = CH_CLASS[channel] || 'ch-altro'
   return <span style={{ ...badgeBase, ...(badgeColors[cls]||{}) }}>{CH_LABELS[channel] || channel}</span>
 }
 

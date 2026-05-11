@@ -19,7 +19,7 @@ export default function AddTask({ section, onAdded }) {
   const [dueDate, setDueDate] = useState('')
   const [channel, setChannel] = useState('ig')
   const [priority, setPriority] = useState('media')
-  const [assignedTo, setAssignedTo] = useState([]) // array for multi-assign
+  const [assignedTo, setAssignedTo] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -58,7 +58,6 @@ export default function AddTask({ section, onAdded }) {
       .single()
 
     if (!error && data) {
-      // Insert additional assignees into task_assignees
       if (assignedTo.length > 0) {
         await supabase.from('task_assignees').insert(
           assignedTo.map(pid => ({ task_id: data.id, profile_id: pid }))
@@ -82,6 +81,7 @@ export default function AddTask({ section, onAdded }) {
             <option value="ig">IG / FB</option>
             <option value="youtube">YouTube</option>
             <option value="tiktok">TikTok</option>
+            <option value="altro">Altro</option>
           </select>
         )}
         {section === 'tecnico' && (
@@ -94,25 +94,19 @@ export default function AddTask({ section, onAdded }) {
         <input style={fieldStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required />
       </div>
 
-      {/* Multi-assignee */}
       <div>
         <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Assegna a</div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {members.map(m => {
             const selected = assignedTo.includes(m.id)
             return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => toggleAssignee(m.id)}
-                style={{
-                  padding:'4px 12px', borderRadius:20, fontSize:12, cursor:'pointer', fontFamily:'var(--font)',
-                  border: `0.5px solid ${selected ? 'var(--accent)' : 'var(--border2)'}`,
-                  background: selected ? 'var(--accent)' : 'transparent',
-                  color: selected ? 'white' : 'var(--text2)',
-                  fontWeight: selected ? 500 : 400, transition:'all 0.15s',
-                }}
-              >{m.full_name}</button>
+              <button key={m.id} type="button" onClick={() => toggleAssignee(m.id)} style={{
+                padding:'4px 12px', borderRadius:20, fontSize:12, cursor:'pointer', fontFamily:'var(--font)',
+                border: `0.5px solid ${selected ? 'var(--accent)' : 'var(--border2)'}`,
+                background: selected ? 'var(--accent)' : 'transparent',
+                color: selected ? 'white' : 'var(--text2)',
+                fontWeight: selected ? 500 : 400, transition:'all 0.15s',
+              }}>{m.full_name}</button>
             )
           })}
         </div>
