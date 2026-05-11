@@ -3,12 +3,34 @@ import { supabase } from '../lib/supabase'
 import { Badge, ChBadge, PrioBadge, fieldStyle } from './UI'
 
 const todayStr = new Date().toISOString().slice(0,10)
+const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10) })()
+const in2daysStr = (() => { const d = new Date(); d.setDate(d.getDate()+2); return d.toISOString().slice(0,10) })()
 
 const TYPE_OPTIONS = {
   videomaker: [['video','Video'],['image','Immagine'],['altro','Altro']],
   copywriter:  [['copy','Copy'],['altro','Altro']],
   tecnico:     [['bug','Bug'],['ticket','Ticket'],['setup','Setup'],['altro','Altro']],
   social:      [['reel','Reel'],['post','Post'],['story','Story'],['short','Short/TikTok'],['video','Video'],['altro','Altro']],
+}
+
+function getCardStyle(task) {
+  if (task.done) return {
+    border:'0.5px solid rgba(62,207,142,0.25)',
+    background:'rgba(62,207,142,0.04)',
+    opacity:0.6,
+  }
+  if (task.due_date && task.due_date < todayStr) return {
+    border:'0.5px solid rgba(244,91,91,0.45)',
+    background:'rgba(244,91,91,0.06)',
+  }
+  if (task.due_date && task.due_date <= in2daysStr) return {
+    border:'0.5px solid rgba(245,158,11,0.45)',
+    background:'rgba(245,158,11,0.06)',
+  }
+  return {
+    border:'0.5px solid var(--border)',
+    background:'var(--bg2)',
+  }
 }
 
 export default function TaskCard({ task, onUpdate, onDelete }) {
@@ -28,6 +50,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
   })
 
   const late = !task.done && task.due_date && task.due_date < todayStr
+  const soonDue = !task.done && !late && task.due_date && task.due_date <= in2daysStr
   const dateLabel = task.due_date
     ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' })
     : null
@@ -123,19 +146,14 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     )
   }
 
+  const cardStyle = getCardStyle(task)
+
   return (
-    <div style={{
-      background: 'var(--bg2)',
-      border: `0.5px solid ${late ? 'rgba(244,91,91,0.35)' : 'var(--border)'}`,
-      borderRadius: 'var(--radius-lg)',
-      padding: '14px 16px',
-      opacity: task.done ? 0.45 : 1,
-      transition: 'all 0.15s',
-    }}>
+    <div style={{ borderRadius:'var(--radius-lg)', padding:'14px 16px', transition:'all 0.15s', ...cardStyle }}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
         <div onClick={toggleDone} style={{
           width:18, height:18, borderRadius:5, flexShrink:0, marginTop:2,
-          border: task.done ? 'none' : '1.5px solid var(--border2)',
+          border: task.done ? 'none' : `1.5px solid ${late ? '#f87171' : soonDue ? '#fbbf24' : 'var(--border2)'}`,
           background: task.done ? 'var(--green)' : 'transparent',
           display:'flex', alignItems:'center', justifyContent:'center',
           fontSize:10, color:'white', cursor:'pointer',
@@ -149,10 +167,15 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               color: task.done ? 'var(--text3)' : 'var(--text)',
             }}>{task.title}</div>
 
+            {/* Meta info in alto a destra */}
             <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0, flexWrap:'wrap', justifyContent:'flex-end' }}>
               {dateLabel && (
-                <span style={{ fontSize:11, fontFamily:'var(--mono)', color: late ? 'var(--red)' : 'var(--text3)', display:'flex', alignItems:'center', gap:3 }}>
-                  {late ? '⚠️' : '📅'} {dateLabel}
+                <span style={{
+                  fontSize:11, fontFamily:'var(--mono)',
+                  color: late ? '#f87171' : soonDue ? '#fbbf24' : 'var(--text3)',
+                  display:'flex', alignItems:'center', gap:3, fontWeight: (late||soonDue) ? 600 : 400,
+                }}>
+                  {late ? '⚠️' : soonDue ? '⏰' : '📅'} {dateLabel}
                 </span>
               )}
               {task.assignee_name && (
@@ -171,12 +194,12 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
 
             <div style={{ display:'flex', gap:6, flexShrink:0, alignItems:'center' }}>
               {task.description && (
-                <button onClick={() => setExpanded(e => !e)} title={expanded ? 'Chiudi dettagli' : 'Espandi dettagli'}
+                <button onClick={() => setExpanded(e => !e)} title={expanded ? 'Chiudi' : 'Espandi'}
                   style={{ fontSize:15, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', padding:'4px 8px', lineHeight:1, borderRadius:6 }}>
                   {expanded ? '▲' : '▼'}
                 </button>
               )}
-              <button onClick={() => setEditing(true)} title="Modifica task"
+              <button onClick={() => setEditing(true)} title="Modifica"
                 style={{ fontSize:15, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', padding:'4px 8px', lineHeight:1, borderRadius:6 }}>✏️</button>
             </div>
           </div>
@@ -191,6 +214,16 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
             <Badge type={task.type} />
             {task.channel && <ChBadge channel={task.channel} />}
             {task.priority && <PrioBadge priority={task.priority} />}
+            {/* Pill stato scadenza */}
+            {late && !task.done && (
+              <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, fontWeight:500, fontFamily:'var(--mono)', background:'rgba(244,91,91,0.15)', color:'#f87171' }}>Scaduta</span>
+            )}
+            {soonDue && (
+              <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, fontWeight:500, fontFamily:'var(--mono)', background:'rgba(245,158,11,0.15)', color:'#fbbf24' }}>In scadenza</span>
+            )}
+            {task.done && (
+              <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, fontWeight:500, fontFamily:'var(--mono)', background:'rgba(62,207,142,0.15)', color:'var(--green)' }}>Completata</span>
+            )}
             {task.due_date && (
               <button onClick={openCalendar} style={{ fontSize:11, padding:'2px 8px', borderRadius:6, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text3)', cursor:'pointer', fontFamily:'var(--mono)' }}>
                 📅 Reminder
