@@ -18,6 +18,7 @@ const CH_COLOR = {
   tiktok:  { bg:'#00f2ea', light:'rgba(0,242,234,0.1)',   text:'#00c8c0', border:'rgba(0,242,234,0.3)',  label:'TikTok' },
   mail:    { bg:'#F59E0B', light:'rgba(245,158,11,0.12)', text:'#F59E0B', border:'rgba(245,158,11,0.35)', label:'Mail' },
 }
+const CHANNELS = ['ig','youtube','tiktok','mail']
 
 function localDateStr(date) {
   const y = date.getFullYear()
@@ -51,26 +52,47 @@ function formatDate(ds) {
   return d.toLocaleDateString('it-IT', { day:'numeric', month:'short' })
 }
 
-function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
+// ── Add Form ──────────────────────────────────────────────────────────────────
+function AddEditorialForm({ onAdded, onDone, onCancel, prefillDate, prefillChannel }) {
   const { profile } = useAuth()
   const [form, setForm] = useState({
-    title:'', channel: prefillChannel||'ig', format:'reel',
+    title:'', channels: prefillChannel ? [prefillChannel] : ['ig'], format:'reel',
     publish_date: prefillDate||'', stato:'pianificazione',
     brief:'', caption:'', hashtags:'', cta:'', notes:'', drive_link:'', published_link:''
   })
   const [loading, setLoading] = useState(false)
   function set(k,v) { setForm(f => ({...f,[k]:v})) }
 
+  function toggleChannel(ch) {
+    setForm(f => {
+      const already = f.channels.includes(ch)
+      // Almeno un canale sempre selezionato
+      if (already && f.channels.length === 1) return f
+      return { ...f, channels: already ? f.channels.filter(c => c !== ch) : [...f.channels, ch] }
+    })
+  }
+
   async function submit(e) {
-    e.preventDefault(); if (!form.title.trim()) return; setLoading(true)
-    const { data, error } = await supabase.from('editorial_plan').insert({
-      title: form.title.trim(), channel: form.channel, format: form.format,
+    e.preventDefault()
+    if (!form.title.trim()) return
+    setLoading(true)
+
+    const base = {
+      title: form.title.trim(), format: form.format,
       publish_date: form.publish_date || null, stato: form.stato,
       brief: form.brief||null, caption: form.caption||null, hashtags: form.hashtags||null,
       cta: form.cta||null, notes: form.notes||null, drive_link: form.drive_link||null,
       published_link: form.published_link||null, created_by: profile?.id||null,
-    }).select().single()
-    if (!error && data) onAdded(data)
+    }
+
+    // Inserisce un record per ogni canale selezionato
+    const inserts = form.channels.map(ch => ({ ...base, channel: ch }))
+    const { data, error } = await supabase.from('editorial_plan').insert(inserts).select()
+
+    if (!error && data) {
+      data.forEach(item => onAdded(item))
+      if (onDone) onDone()
+    }
     setLoading(false)
   }
 
@@ -80,18 +102,43 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
       <form onSubmit={submit}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
           <input style={{ ...fieldStyle, gridColumn:'1/-1' }} value={form.title} onChange={e => set('title',e.target.value)} placeholder="Titolo contenuto..." required />
-          <select style={fieldStyle} value={form.channel} onChange={e => set('channel',e.target.value)}>
-            <option value="ig">IG / FB</option><option value="youtube">YouTube</option>
-            <option value="tiktok">TikTok</option><option value="mail">Mail</option>
-          </select>
           <select style={fieldStyle} value={form.format} onChange={e => set('format',e.target.value)}>
             {Object.entries(FORMAT_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <input style={fieldStyle} type="date" value={form.publish_date} onChange={e => set('publish_date',e.target.value)} />
-          <select style={fieldStyle} value={form.stato} onChange={e => set('stato',e.target.value)}>
+          <select style={{ ...fieldStyle, gridColumn:'1/-1' }} value={form.stato} onChange={e => set('stato',e.target.value)}>
             {STATI.map(s => <option key={s} value={s}>{STATI_LABELS[s]}</option>)}
           </select>
         </div>
+
+        {/* Selezione canali — multi toggle */}
+        <div style={{ marginBottom:10 }}>
+          <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+            Canali {form.channels.length > 1 && <span style={{ color:'var(--accent)', marginLeft:4 }}>({form.channels.length} selezionati — verranno creati {form.channels.length} contenuti)</span>}
+          </div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {CHANNELS.map(ch => {
+              const c = CH_COLOR[ch]
+              const selected = form.channels.includes(ch)
+              return (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => toggleChannel(ch)}
+                  style={{
+                    padding:'4px 14px', borderRadius:20, fontSize:12, cursor:'pointer', fontFamily:'var(--font)',
+                    border: `0.5px solid ${selected ? c.border : 'var(--border2)'}`,
+                    background: selected ? c.light : 'transparent',
+                    color: selected ? c.text : 'var(--text3)',
+                    fontWeight: selected ? 600 : 400,
+                    transition:'all 0.15s',
+                  }}
+                >{c.label}</button>
+              )
+            })}
+          </div>
+        </div>
+
         <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:56, marginBottom:8, lineHeight:1.5 }} value={form.brief} onChange={e => set('brief',e.target.value)} placeholder="Brief / descrizione del contenuto..." />
         <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:56, marginBottom:8, lineHeight:1.5 }} value={form.caption} onChange={e => set('caption',e.target.value)} placeholder="Caption / testo / corpo della mail..." />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -102,7 +149,9 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
         </div>
         <textarea style={{ ...fieldStyle, width:'100%', resize:'vertical', minHeight:40, marginBottom:12, lineHeight:1.5 }} value={form.notes} onChange={e => set('notes',e.target.value)} placeholder="Note interne..." />
         <div style={{ display:'flex', gap:8 }}>
-          <button type="submit" disabled={loading} style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer' }}>{loading?'Salvataggio...':'+ Aggiungi'}</button>
+          <button type="submit" disabled={loading} style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'var(--accent)', color:'white', fontSize:13, fontWeight:500, cursor:'pointer' }}>
+            {loading ? 'Salvataggio...' : form.channels.length > 1 ? `+ Crea ${form.channels.length} contenuti` : '+ Aggiungi'}
+          </button>
           <button type="button" onClick={onCancel} style={{ padding:'8px 14px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}>Annulla</button>
         </div>
       </form>
@@ -110,6 +159,7 @@ function AddEditorialForm({ onAdded, onCancel, prefillDate, prefillChannel }) {
   )
 }
 
+// ── Edit/Duplicate Form ────────────────────────────────────────────────────────
 function EditForm({ initialData, mode, onSave, onCancel, saving }) {
   const [form, setForm] = useState({ ...initialData, title: mode === 'duplicate' ? initialData.title + ' (copia)' : initialData.title })
   function set(k,v) { setForm(f => ({...f,[k]:v})) }
@@ -151,6 +201,7 @@ function EditForm({ initialData, mode, onSave, onCancel, saving }) {
   )
 }
 
+// ── Detail Modal ───────────────────────────────────────────────────────────────
 function DetailModal({ item, onClose, onUpdate, onDelete, onDuplicate }) {
   if (!item) return null
   const [mode, setMode] = useState('view')
@@ -341,8 +392,7 @@ function WeekView({ items, weekStart, onSelect, onAdd, onDrop }) {
             <DropZone key={ds} dateStr={ds} onDrop={onDrop} style={{
               background: isToday ? 'rgba(124,108,250,0.06)' : 'var(--bg2)',
               border: `0.5px solid ${isToday ? 'var(--accent)' : 'var(--border)'}`,
-              borderRadius: 'var(--radius-lg)',
-              padding: '10px 8px',
+              borderRadius: 'var(--radius-lg)', padding: '10px 8px',
               minHeight: dayItems.length === 0 ? 120 : 'unset',
             }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
@@ -485,6 +535,10 @@ export default function EditorialPlan({ channelFilter }) {
   function onDuplicate(item) { setItems(prev => [...prev, item]) }
   function handleAdd(date, ch) { setAddPrefillDate(date); setAddPrefillChannel(ch||''); setShowAdd(true) }
 
+  // onAdded multiplo — chiamato per ogni item creato
+  function onAddedMulti(item) { setItems(prev => [...prev, item]) }
+  function onAddedMultiDone() { setShowAdd(false) }
+
   async function handleDrop(itemId, newDateStr) {
     const item = items.find(i => String(i.id) === String(itemId))
     if (!item || item.publish_date === newDateStr) return
@@ -543,11 +597,8 @@ export default function EditorialPlan({ channelFilter }) {
         <button onClick={navNext} style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'var(--bg2)', cursor:'pointer', fontSize:14, color:'var(--text2)' }}>→</button>
         <button onClick={goToday} style={{ padding:'5px 12px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:12, cursor:'pointer' }}>Oggi</button>
         <div style={{ position:'relative' }}>
-          <button
-            onClick={() => document.getElementById('ped-datepicker').showPicker?.() || document.getElementById('ped-datepicker').focus()}
-            style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }}
-            title="Vai a data"
-          >📅</button>
+          <button onClick={() => document.getElementById('ped-datepicker').showPicker?.() || document.getElementById('ped-datepicker').focus()}
+            style={{ padding:'5px 10px', borderRadius:8, border:'0.5px solid var(--border2)', background:'transparent', color:'var(--text2)', fontSize:13, cursor:'pointer' }} title="Vai a data">📅</button>
           <input id="ped-datepicker" type="date" onChange={e => { if (e.target.value) goToDate(e.target.value) }} style={{ position:'absolute', opacity:0, pointerEvents:'none', width:1, height:1, top:0, left:0 }} />
         </div>
         <select style={{ ...fieldStyle, fontSize:12, padding:'5px 10px' }} value={statoFilter} onChange={e => setStatoFilter(e.target.value)}>
@@ -570,7 +621,15 @@ export default function EditorialPlan({ channelFilter }) {
         <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', opacity:0.5 }}>— trascina per spostare • clicca per dettagli</span>
       </div>
 
-      {showAdd && <AddEditorialForm onAdded={onAdded} onCancel={() => setShowAdd(false)} prefillDate={addPrefillDate} prefillChannel={addPrefillChannel} />}
+      {showAdd && (
+        <AddEditorialForm
+          onAdded={item => onAddedMulti(item)}
+          onDone={() => setShowAdd(false)}
+          onCancel={() => setShowAdd(false)}
+          prefillDate={addPrefillDate}
+          prefillChannel={addPrefillChannel}
+        />
+      )}
 
       {loading ? <Spinner /> : (
         <>
